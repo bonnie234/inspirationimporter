@@ -9,13 +9,15 @@
   "documentAccess": "dynamic-page",
   "networkAccess": {
     "allowedDomains": [
-      "*",
-      "http://localhost:8787"
+      "https://inspirationimporter.onrender.com",
+      "http://localhost:8787",
+      "*"
     ],
     "devAllowedDomains": [
-      "*",
-      "http://localhost:8787"
+      "https://inspirationimporter.onrender.com",
+      "http://localhost:8787",
+      "*"
     ],
-    "reasoning": "The plugin fetches user-provided direct image URLs and talks to a local scraper/proxy backend for website extraction during development."
+    "reasoning": "The plugin fetches user-provided direct image URLs and talks to the hosted scraper/proxy backend for website extraction."
   }
 }

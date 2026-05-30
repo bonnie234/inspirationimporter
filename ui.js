@@ -1,5 +1,5 @@
 (() => {
-  const SCRAPER_BACKEND_URL = 'http://localhost:8787';
+  const SCRAPER_BACKEND_URL = 'https://inspirationimporter.onrender.com';
 
   const state = {
     assets: [],
@@ -7,6 +7,7 @@
     favorites: [],
     activeFormat: 'all',
     hideTiny: true,
+    hideUnavailable: false,
     busy: false,
   };
 
@@ -21,6 +22,7 @@
     deselectAllBtn: document.getElementById('deselectAllBtn'),
     importBtn: document.getElementById('importBtn'),
     hideTinyToggle: document.getElementById('hideTinyToggle'),
+    hideUnavailableToggle: document.getElementById('hideUnavailableToggle'),
     favoritesList: document.getElementById('favoritesList'),
     filterButtons: Array.from(document.querySelectorAll('.filter-btn')),
     selfTestBtn: document.getElementById('selfTestBtn'),
@@ -52,6 +54,34 @@
     var out = SCRAPER_BACKEND_URL.replace(/\/$/, '') + '/asset-data?url=' + encodeURIComponent(url);
     if (referer) out += '&referer=' + encodeURIComponent(referer);
     return out;
+  }
+
+  function friendlyExtractionError(detail, rawUrl) {
+    const message = String(detail || '');
+    const blockedMatch = message.match(/HTTP[_ ]?(401|402|403|406|407|409|410|418|429|451|503)/i);
+    if (blockedMatch) {
+      const code = blockedMatch[1];
+      const host = getHostname(rawUrl);
+      return 'This site blocks extraction. Try another public page or use a direct image URL instead.';
+    }
+    if (/HTTP[_ ]?404|404/i.test(message)) {
+      return 'Page not found. Check the URL and try again.';
+    }
+    if (/HTTP[_ ]?500|HTTP[_ ]?502|HTTP[_ ]?504|500|502|504/i.test(message)) {
+      return 'The website or scraper had a temporary server error. Try again in a moment, or test a different page.';
+    }
+    if (/Failed to fetch|BACKEND_UNAVAILABLE|NetworkError|TypeError/i.test(message)) {
+      return 'Could not reach the hosted scraper. The service may be waking up or temporarily unavailable. Try again in a moment.';
+    }
+    return 'Extraction could not complete for this page. Try another public URL or paste a direct image link.';
+  }
+
+  function getHostname(url) {
+    try {
+      return String(url || '').replace(/^https?:\/\//i, '').split('/')[0] || 'This website';
+    } catch (error) {
+      return 'This website';
+    }
   }
 
   function setBusy(isBusy) {
@@ -111,12 +141,28 @@
     return width <= 24 || height <= 24;
   }
 
-  function currentAssets() {
+  function visibleAssets() {
     return state.assets.filter(function(asset) {
       var formatMatches = state.activeFormat === 'all' || asset.format === state.activeFormat;
       var sizeMatches = !state.hideTiny || !isTinyAsset(asset);
-      return formatMatches && sizeMatches;
+      var previewMatches = !state.hideUnavailable || !asset.previewFailed;
+      return formatMatches && sizeMatches && previewMatches;
     });
+  }
+
+  function currentAssets() {
+    return visibleAssets();
+  }
+
+  function updateResultsSummary(assets) {
+    var shown = assets.length;
+    var total = state.assets.length;
+    var hiddenTiny = state.hideTiny ? state.assets.filter(isTinyAsset).length : 0;
+    var unavailable = state.assets.filter(function(asset) { return !!asset.previewFailed; }).length;
+    var pieces = [shown + ' shown', total + ' found'];
+    if (hiddenTiny) pieces.push(hiddenTiny + ' tiny hidden');
+    if (unavailable) pieces.push(unavailable + ' preview unavailable');
+    els.count.textContent = total ? pieces.join(' · ') : '0 found';
   }
 
   function formatBytes(bytes) {
@@ -168,10 +214,10 @@
 
   function renderGrid() {
     const assets = currentAssets();
-    els.count.textContent = assets.length === state.assets.length ? `${assets.length} found` : `${assets.length} shown / ${state.assets.length} found`;
+    updateResultsSummary(assets);
 
     if (!assets.length) {
-      els.grid.innerHTML = '<div class="empty">No images match this filter.</div>';
+      els.grid.innerHTML = '<div class="empty">No assets match the current filters.</div>';
       updateImportButton();
       return;
     }
@@ -191,12 +237,18 @@
       img.src = asset.thumbnail || asset.src;
       img.addEventListener('load', () => updateAssetDimensions(asset.id, img));
       img.addEventListener('error', () => {
+        asset.previewFailed = true;
         img.remove();
+        if (state.hideUnavailable) {
+          renderGrid();
+          return;
+        }
         var fallback = document.createElement('div');
         card.classList.add('preview-failed');
         fallback.className = 'thumb-fallback';
         fallback.innerHTML = '<strong>' + (asset.format || 'asset').toUpperCase() + '</strong><span>Preview unavailable</span>';
         thumbWrap.appendChild(fallback);
+        updateResultsSummary(currentAssets());
       });
       thumbWrap.appendChild(img);
 
@@ -300,7 +352,7 @@
   async function extract() {
     const url = normalizeUrlInput(els.urlInput.value);
     if (!url) {
-      setStatus('Enter a valid website URL.', 'error');
+      setStatus('Paste a public website URL or direct image URL.', 'error');
       return;
     }
     state.assets = [];
@@ -314,7 +366,7 @@
       return;
     }
 
-    setStatus('Extracting via local scraper backend…', 'busy');
+    setStatus('Extracting website assets…', 'busy');
     try {
       const response = await fetch(backendExtractUrl(url, els.qualitySelect.value), {
         method: 'GET',
@@ -329,12 +381,12 @@
       state.assets = Array.isArray(payload.assets) ? payload.assets : [];
       state.selectedIds.clear();
       setBusy(false);
-      setStatus(state.assets.length ? `Found ${state.assets.length} assets via scraper backend.` : 'No supported images were found on that page.', state.assets.length ? 'success' : 'default');
+      setStatus(state.assets.length ? `Found ${state.assets.length} assets. Use filters to narrow the results.` : 'No supported images were found on that page.', state.assets.length ? 'success' : 'default');
       renderGrid();
     } catch (error) {
       setBusy(false);
       const detail = error && error.message ? error.message : 'BACKEND_UNAVAILABLE';
-      setStatus('Could not reach the local scraper backend. Run npm install, then npm run dev in the project folder. Details: ' + detail, 'error');
+      setStatus(friendlyExtractionError(detail, url), 'error');
       renderGrid();
     }
   }
@@ -361,9 +413,18 @@
     });
   }
 
+  if (els.hideUnavailableToggle) {
+    els.hideUnavailableToggle.checked = state.hideUnavailable;
+    els.hideUnavailableToggle.addEventListener('change', function() {
+      state.hideUnavailable = els.hideUnavailableToggle.checked;
+      renderGrid();
+      setStatus(state.hideUnavailable ? 'Assets without previews are hidden.' : 'Showing assets even when previews are unavailable.');
+    });
+  }
+
   els.selectAllBtn.addEventListener('click', () => {
     currentAssets().forEach((asset) => state.selectedIds.add(asset.id));
-    setStatus(`Selected ${state.selectedIds.size} images.`, 'success');
+    setStatus(`Selected ${currentAssets().length} visible asset${currentAssets().length === 1 ? '' : 's'}.`, 'success');
     renderGrid();
   });
 

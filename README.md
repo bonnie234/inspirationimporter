@@ -82,3 +82,9 @@ When testing sites with many assets, keep **Hide tiny** enabled first. Some boxe
 ## v20 polish
 
 Asset cards now use clearer compact metadata: format label, dimensions in pixels, file size availability, and a direct Open source link for quality checking.
+
+
+## v23 polish
+
+- Added plain-language blocked-site messaging for HTTP 401/402/403/429-style responses.
+- Replaced developer-style extraction error details with user-friendly guidance.
