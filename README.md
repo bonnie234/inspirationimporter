@@ -1,71 +1,46 @@
-Inspiration Importer — Private Beta
+# Inspiration Importer
 
-Inspiration Importer is a Figma plugin that helps designers pull visual assets from public websites into Figma.
+**Pull visual assets from public websites into Figma.**
 
-Paste a website URL, extract images/SVGs/icons/logos, preview the results, select what you want, and import selected assets directly onto the Figma canvas.
+Inspiration Importer is a Figma plugin that helps designers extract images, SVGs, icons, logos, and other visual assets from public webpages.
 
-What to test
+Paste a URL, preview the extracted assets, select what you want, and import them directly onto your Figma canvas.
 
-Please test the plugin with a few public website URLs and let me know what works, what feels confusing, and what breaks.
+## Private Beta
 
-Good test URLs:
+This is an early beta. It works best with public websites and direct image URLs. Some websites may block extraction.
 
-https://www.wikipedia.org
-https://www.nba.com
-https://tasteofhome.com
+## How to Install
 
-You can also test a direct image URL, like:
+1. Download and unzip the beta folder.
+2. Open Figma Desktop.
+3. Go to **Plugins → Development → Import plugin from manifest…**
+4. Select the `manifest.json` file from the unzipped folder.
+5. Run **Plugins → Development → Inspiration Importer**.
 
-https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg
-How to install
-Download and unzip the beta folder.
-Open Figma Desktop.
-Go to Plugins → Development → Import plugin from manifest…
-Select the manifest.json file from the unzipped folder.
-Run Plugins → Development → Inspiration Importer.
-How to use
-Paste a public website URL.
-Click Extract Assets.
-Review the asset grid.
-Use filters like SVG, PNG, JPG, WEBP, Hide tiny, or Hide unavailable.
-Select the assets you want.
-Click Import Selected.
-The selected assets should appear on the Figma canvas.
-What “Open source” means
+## How to Use
 
-Each asset card includes an Open source link.
+1. Paste a public website URL.
+2. Click **Extract Assets**.
+3. Review the asset grid.
+4. Select the assets you want.
+5. Click **Import Selected**.
 
-Use this to:
-
-view the original image/icon file
-check image quality
-copy the direct image URL
-see if a larger version exists
-Known limitations
+## Known Limitation
 
 Some websites block extraction. If that happens, the plugin will show:
 
-This site blocks extraction.
-Try another public page or use a direct image URL instead.
+> This site blocks extraction.  
+> Try another public page or use a direct image URL instead.
 
-This means the site does not allow the plugin/backend to access its assets. The plugin is still working.
+That means the website refused extraction. The plugin is still working.
 
-Some assets may show Preview unavailable. This usually means the asset was detected, but the site blocked preview loading or the file is more technical than visual.
+## Feedback
 
-Feedback questions
+If you test the beta, please let me know:
 
-Please send feedback on:
-
-1. Were you able to install the plugin?
-2. Was the purpose clear?
-3. What URLs did you test?
-4. Did assets appear in the grid?
-5. Were the filters useful?
-6. Did “Open source” make sense?
-7. Were you able to import selected assets into Figma?
-8. Did any sites block extraction?
-9. What felt confusing?
-10. Would this be useful in your design workflow?
-Beta note
-
-This is an early beta. It works best with public websites and direct image URLs. Some sites may block extraction.
+- Were you able to install it?
+- What URLs did you test?
+- Did assets appear?
+- Were you able to import assets into Figma?
+- What felt confusing?
