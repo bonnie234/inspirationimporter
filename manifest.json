@@ -1,0 +1,21 @@
+{
+  "name": "Inspiration Importer",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": [
+    "figma"
+  ],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": [
+      "*",
+      "http://localhost:8787"
+    ],
+    "devAllowedDomains": [
+      "*",
+      "http://localhost:8787"
+    ],
+    "reasoning": "The plugin fetches user-provided direct image URLs and talks to a local scraper/proxy backend for website extraction during development."
+  }
+}
