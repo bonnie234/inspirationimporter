@@ -1,5 +1,3 @@
-Great — let’s make the tester README / instructions. You can paste this into the ZIP, GitHub README, or an email to testers.
-
 Inspiration Importer — Private Beta
 
 Inspiration Importer is a Figma plugin that helps designers pull visual assets from public websites into Figma.
