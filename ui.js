@@ -8,13 +8,13 @@
     activeFormat: 'all',
     hideTiny: true,
     hideUnavailable: false,
+    showDuplicateSizes: false,
     busy: false,
   };
 
   const els = {
     urlInput: document.getElementById('urlInput'),
     extractBtn: document.getElementById('extractBtn'),
-    qualitySelect: document.getElementById('qualitySelect'),
     status: document.getElementById('status'),
     grid: document.getElementById('imageGrid'),
     count: document.getElementById('resultCount'),
@@ -23,6 +23,7 @@
     importBtn: document.getElementById('importBtn'),
     hideTinyToggle: document.getElementById('hideTinyToggle'),
     hideUnavailableToggle: document.getElementById('hideUnavailableToggle'),
+    showDuplicatesToggle: document.getElementById('showDuplicatesToggle'),
     favoritesList: document.getElementById('favoritesList'),
     filterButtons: Array.from(document.querySelectorAll('.filter-btn')),
     selfTestBtn: document.getElementById('selfTestBtn'),
@@ -47,7 +48,7 @@
   }
 
   function backendExtractUrl(url, quality) {
-    return SCRAPER_BACKEND_URL.replace(/\/$/, '') + '/extract?url=' + encodeURIComponent(url) + '&quality=' + encodeURIComponent(quality || 'medium');
+    return SCRAPER_BACKEND_URL.replace(/\/$/, '') + '/extract?url=' + encodeURIComponent(url) + '&quality=' + encodeURIComponent(quality || 'high');
   }
 
   function backendAssetDataUrl(url, referer) {
@@ -88,7 +89,6 @@
     state.busy = isBusy;
     els.extractBtn.disabled = isBusy;
     els.importBtn.disabled = isBusy || state.selectedIds.size === 0;
-    els.qualitySelect.disabled = isBusy;
   }
 
   function loadFavoritesLocal() {
@@ -141,7 +141,7 @@
     return width <= 24 || height <= 24;
   }
 
-  function visibleAssets() {
+  function baseFilteredAssets() {
     return state.assets.filter(function(asset) {
       var formatMatches = state.activeFormat === 'all' || asset.format === state.activeFormat;
       var sizeMatches = !state.hideTiny || !isTinyAsset(asset);
@@ -150,18 +150,146 @@
     });
   }
 
+  function visibleAssets() {
+    var assets = baseFilteredAssets();
+    return state.showDuplicateSizes ? assets : bestVersionOnly(assets).assets;
+  }
+
+  function assetArea(asset) {
+    var width = Number(asset.width || 0);
+    var height = Number(asset.height || 0);
+    return width > 0 && height > 0 ? width * height : 0;
+  }
+
+  function assetUsefulnessScore(asset) {
+    var score = 0;
+    var area = assetArea(asset);
+    var source = String(asset.originalSrc || asset.sourceUrl || asset.remoteSrc || asset.src || '').toLowerCase();
+    var alt = String(asset.alt || '').toLowerCase();
+    var text = source + ' ' + alt;
+
+    if (asset.previewFailed) score -= 1000;
+    if (isTinyAsset(asset)) score -= 600;
+
+    if (asset.format === 'jpg' || asset.format === 'jpeg' || asset.format === 'png' || asset.format === 'webp') score += 300;
+    if (asset.format === 'svg') score += 170;
+
+    if (/logo|hero|banner|product|campaign|photo|image|media|card|thumbnail|og:image/.test(text)) score += 180;
+    if (/sprite|pixel|tracker|tracking|beacon|spacer|blank|transparent|favicon/.test(text)) score -= 220;
+
+    score += Math.min(900, area / 1200);
+    if (asset.fileSize) score += Math.min(250, Number(asset.fileSize) / 12000);
+    return score;
+  }
+
+  function sortUsefulAssets(a, b) {
+    var scoreDiff = assetUsefulnessScore(b) - assetUsefulnessScore(a);
+    if (scoreDiff !== 0) return scoreDiff;
+    return assetArea(b) - assetArea(a);
+  }
+
+  function duplicateKey(asset) {
+    var raw = String(asset.originalSrc || asset.sourceUrl || asset.remoteSrc || asset.src || '');
+    if (!raw || /^data:/i.test(raw)) return asset.id || raw;
+    raw = raw.toLowerCase();
+    raw = raw.replace(/\\\//g, '/');
+    raw = raw.split('#')[0];
+
+    var query = '';
+    var questionIndex = raw.indexOf('?');
+    if (questionIndex >= 0) {
+      query = raw.slice(questionIndex + 1);
+      raw = raw.slice(0, questionIndex);
+    }
+
+    raw = raw
+      .replace(/%2f/g, '/')
+      .replace(/%20/g, '-')
+      .replace(/\/\d{2,5}px-/g, '/')
+      // Amazon / Shopbop image CDN variants often store the same image with
+      // quality/size instructions before the extension, such as
+      // ._QL80_UX768_AGcontrast_FMwebp_.jpg, ._SX1500_.jpg, or
+      // ._AC_SL1500_.jpg. Strip those modifier blocks so only the largest/best
+      // version appears by default.
+      .replace(/\._[^/]*?(?:ux|uy|sx|sy|sr|sl|ul|us|ss|ql|fm|ac|agcontrast)[^/]*_\.(?=(?:jpg|jpeg|png|webp|gif)$)/g, '.')
+      .replace(/\._[^/]*_\.(?=(?:jpg|jpeg|png|webp|gif)$)/g, '.')
+      .replace(/([_-])\d{2,5}x\d{2,5}(?=\.(?:jpg|jpeg|png|webp|gif|svg)(?:$|\?))/g, '')
+      .replace(/([_-])\d{2,5}w(?=\.(?:jpg|jpeg|png|webp|gif|svg)(?:$|\?))/g, '')
+      .replace(/([_-])(?:small|medium|large|grande|compact|thumb|thumbnail|master|original)(?=\.(?:jpg|jpeg|png|webp|gif|svg)(?:$|\?))/g, '')
+      .replace(/@\d+x(?=\.(?:jpg|jpeg|png|webp|gif|svg)(?:$|\?))/g, '');
+
+    // Some CDNs use query params for width/height only. Remove those while keeping
+    // potentially identity-bearing parameters.
+    if (query) {
+      var kept = query.split('&').filter(function(part) {
+        return !/^(w|width|h|height|q|quality|fit|crop|auto|format|fm|dpr|scale|size|sizes)=/i.test(part);
+      });
+      if (kept.length) raw += '?' + kept.join('&');
+    }
+
+    // For Amazon/Shopbop CDN media, the ID before the modifier block is the
+    // image identity. Treat JPG/WEBP variants of the same ID as duplicates too.
+    if (/m\.media-amazon\.com|shopbop/i.test(raw)) {
+      raw = raw.replace(/\.(?:jpg|jpeg|png|webp|gif)$/i, '');
+    }
+
+    return raw;
+  }
+
+  function duplicateRank(asset) {
+    return assetArea(asset) + Math.min(5000000, Number(asset.fileSize || 0)) + assetUsefulnessScore(asset) * 1000;
+  }
+
+  function bestVersionOnly(assets) {
+    var bestByKey = {};
+    var order = [];
+    var duplicatesHidden = 0;
+
+    assets.forEach(function(asset) {
+      var key = duplicateKey(asset);
+      if (!key) {
+        key = asset.id || createId();
+      }
+      if (!bestByKey[key]) {
+        bestByKey[key] = asset;
+        order.push(key);
+        return;
+      }
+
+      duplicatesHidden += 1;
+      var current = bestByKey[key];
+      if (duplicateRank(asset) > duplicateRank(current)) {
+        bestByKey[key] = asset;
+      }
+    });
+
+    return {
+      assets: order.map(function(key) { return bestByKey[key]; }),
+      hiddenCount: duplicatesHidden
+    };
+  }
+
+  function hiddenDuplicateCount() {
+    if (state.showDuplicateSizes) return 0;
+    return bestVersionOnly(baseFilteredAssets()).hiddenCount;
+  }
+
   function currentAssets() {
-    return visibleAssets();
+    return visibleAssets().slice().sort(sortUsefulAssets);
   }
 
   function updateResultsSummary(assets) {
     var shown = assets.length;
     var total = state.assets.length;
     var hiddenTiny = state.hideTiny ? state.assets.filter(isTinyAsset).length : 0;
+    var hiddenDuplicates = hiddenDuplicateCount();
     var unavailable = state.assets.filter(function(asset) { return !!asset.previewFailed; }).length;
+    var ready = Math.max(0, total - unavailable);
     var pieces = [shown + ' shown', total + ' found'];
+    if (ready) pieces.push(ready + ' ready');
+    if (unavailable) pieces.push(unavailable + ' unavailable');
+    if (hiddenDuplicates) pieces.push(hiddenDuplicates + ' duplicate sizes hidden');
     if (hiddenTiny) pieces.push(hiddenTiny + ' tiny hidden');
-    if (unavailable) pieces.push(unavailable + ' preview unavailable');
     els.count.textContent = total ? pieces.join(' · ') : '0 found';
   }
 
@@ -279,7 +407,7 @@
       meta.className = 'meta';
       var directUrl = sourceLink(asset);
       var directLink = directUrl && /^https?:\/\//i.test(directUrl)
-        ? '<a class="source-link" href="' + escapeHtml(directUrl) + '" target="_blank" rel="noopener noreferrer" title="' + escapeHtml(directUrl) + '">Open source</a>'
+        ? '<span class="source-actions"><a class="source-link" href="' + escapeHtml(directUrl) + '" target="_blank" rel="noopener noreferrer" title="' + escapeHtml(directUrl) + '">Open source</a><button type="button" class="copy-link" data-copy-url="' + escapeHtml(directUrl) + '">Copy URL</button></span>'
         : '<span class="url" title="' + escapeHtml(directUrl || '') + '">' + escapeHtml(directUrl || 'Source unavailable') + '</span>';
       meta.innerHTML = `
         <strong>${displayFormat(asset)}</strong>
@@ -287,6 +415,15 @@
         <span>${formatBytes(asset.fileSize)}</span>
         ${directLink}
       `;
+
+      var copyButton = meta.querySelector('[data-copy-url]');
+      if (copyButton) {
+        copyButton.addEventListener('click', function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          copyToClipboard(copyButton.getAttribute('data-copy-url') || '');
+        });
+      }
 
       card.append(thumbWrap, actions, meta);
       fragment.appendChild(card);
@@ -349,6 +486,27 @@
       .replace(/'/g, '&#039;');
   }
 
+  async function copyToClipboard(text) {
+    if (!text) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        textarea.remove();
+      }
+      setStatus('Source URL copied.', 'success');
+    } catch (error) {
+      setStatus('Could not copy the URL. Use Open source to view it instead.', 'error');
+    }
+  }
+
   async function extract() {
     const url = normalizeUrlInput(els.urlInput.value);
     if (!url) {
@@ -362,13 +520,13 @@
 
     if (isDirectImageUrl(url)) {
       setStatus('Reading direct image URL…', 'busy');
-      post({ type: 'extract-url', url, quality: els.qualitySelect.value });
+      post({ type: 'extract-url', url, quality: 'high' });
       return;
     }
 
     setStatus('Extracting website assets…', 'busy');
     try {
-      const response = await fetch(backendExtractUrl(url, els.qualitySelect.value), {
+      const response = await fetch(backendExtractUrl(url, 'high'), {
         method: 'GET',
         mode: 'cors',
         credentials: 'omit',
@@ -381,7 +539,7 @@
       state.assets = Array.isArray(payload.assets) ? payload.assets : [];
       state.selectedIds.clear();
       setBusy(false);
-      setStatus(state.assets.length ? `Found ${state.assets.length} assets. Use filters to narrow the results.` : 'No supported images were found on that page.', state.assets.length ? 'success' : 'default');
+      setStatus(state.assets.length ? `Found ${state.assets.length} assets. Best versions are shown first.` : 'No supported images were found on that page.', state.assets.length ? 'success' : 'default');
       renderGrid();
     } catch (error) {
       setBusy(false);
@@ -414,11 +572,20 @@
   }
 
   if (els.hideUnavailableToggle) {
-    els.hideUnavailableToggle.checked = state.hideUnavailable;
+    els.hideUnavailableToggle.checked = !state.hideUnavailable;
     els.hideUnavailableToggle.addEventListener('change', function() {
-      state.hideUnavailable = els.hideUnavailableToggle.checked;
+      state.hideUnavailable = !els.hideUnavailableToggle.checked;
       renderGrid();
-      setStatus(state.hideUnavailable ? 'Assets without previews are hidden.' : 'Showing assets even when previews are unavailable.');
+      setStatus(state.hideUnavailable ? 'Unavailable assets are hidden.' : 'Showing unavailable assets with Open source and Copy URL.');
+    });
+  }
+
+  if (els.showDuplicatesToggle) {
+    els.showDuplicatesToggle.checked = state.showDuplicateSizes;
+    els.showDuplicatesToggle.addEventListener('change', function() {
+      state.showDuplicateSizes = els.showDuplicatesToggle.checked;
+      renderGrid();
+      setStatus(state.showDuplicateSizes ? 'Showing duplicate responsive sizes.' : 'Showing best available version for duplicate image sizes.');
     });
   }
 
@@ -489,7 +656,7 @@
         }
 
         var proxiedBlob = dataUrlToBlob(payload.dataUrl);
-        var proxiedRaster = await rasterBlobToSafeDataUrl(proxiedBlob, asset, els.qualitySelect.value);
+        var proxiedRaster = await rasterBlobToSafeDataUrl(proxiedBlob, asset, 'high');
         prepared.src = proxiedRaster.dataUrl;
         prepared.remoteSrc = sourceForBackend;
         prepared.fileSize = proxiedRaster.fileSize || payload.fileSize || asset.fileSize || null;
@@ -513,7 +680,7 @@
       }
 
       var blob = await response.blob();
-      var raster = await rasterBlobToSafeDataUrl(blob, asset, els.qualitySelect.value);
+      var raster = await rasterBlobToSafeDataUrl(blob, asset, 'high');
       prepared.src = raster.dataUrl;
       prepared.remoteSrc = asset.src;
       prepared.fileSize = raster.fileSize || blob.size || asset.fileSize || null;
@@ -649,7 +816,7 @@
     }
 
     setStatus(`Importing ${prepared.length - blocked} prepared asset${prepared.length - blocked === 1 ? '' : 's'}…`, 'busy');
-    post({ type: 'import-selected', assets: prepared.filter(function(asset) { return !asset.importError; }), quality: els.qualitySelect.value });
+    post({ type: 'import-selected', assets: prepared.filter(function(asset) { return !asset.importError; }), quality: 'high' });
   });
 
   window.onmessage = (event) => {
@@ -660,7 +827,7 @@
       setBusy(false);
       state.assets = message.assets || [];
       state.selectedIds.clear();
-      setStatus(state.assets.length ? `Found ${state.assets.length} assets.` : 'No supported images were found on that page.', state.assets.length ? 'success' : 'default');
+      setStatus(state.assets.length ? `Found ${state.assets.length} assets. Best versions are shown first.` : 'No supported images were found on that page.', state.assets.length ? 'success' : 'default');
       renderGrid();
       return;
     }

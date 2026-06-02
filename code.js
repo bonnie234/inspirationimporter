@@ -6,7 +6,7 @@ const GRID_GAP = 32;
 figma.ui.onmessage = async (message) => {
   try {
     if (message.type === 'extract-url') {
-      const assets = await extractAssetsFromUrl(message.url, message.quality || 'medium');
+      const assets = await extractAssetsFromUrl(message.url, message.quality || 'high');
       figma.ui.postMessage({ type: 'extraction-success', assets });
       return;
     }
@@ -18,7 +18,7 @@ figma.ui.onmessage = async (message) => {
     }
 
     if (message.type === 'import-selected') {
-      const imported = await importAssets(message.assets || [], message.quality || 'medium');
+      const imported = await importAssets(message.assets || [], message.quality || 'high');
       figma.ui.postMessage({ type: 'import-success', imported });
       figma.notify(`Imported ${imported} asset${imported === 1 ? '' : 's'}.`);
       return;
@@ -391,7 +391,7 @@ async function importAssets(assets, quality) {
 
   var failures = [];
   const frame = figma.createFrame();
-  frame.name = 'Inspiration Import';
+  frame.name = frameNameForAssets(assets);
   frame.x = figma.viewport.center.x;
   frame.y = figma.viewport.center.y;
   frame.layoutMode = 'NONE';
@@ -459,7 +459,7 @@ async function createNodeForAsset(asset, quality) {
   const bytes = await fetchImageBytes(asset.src);
   const image = figma.createImage(bytes);
   const rect = figma.createRectangle();
-  rect.name = safeNodeName(asset.alt || asset.format || 'Imported image');
+  rect.name = safeNodeName(asset.alt || filenameFromAsset(asset) || asset.format || 'Imported image');
 
   const display = getDisplaySize(asset.width, asset.height, quality);
   rect.resize(display.width, display.height);
@@ -469,7 +469,7 @@ async function createNodeForAsset(asset, quality) {
 
 function createSvgNode(svgText, asset) {
   const node = figma.createNodeFromSvg(svgText);
-  node.name = safeNodeName(asset.alt || 'Imported SVG');
+  node.name = safeNodeName(asset.alt || filenameFromAsset(asset) || 'Imported SVG');
   const display = getDisplaySize(asset.width || node.width, asset.height || node.height, 'high');
   if (node.resize && display.width && display.height) node.resize(display.width, display.height);
   return node;
@@ -505,7 +505,7 @@ function getDisplaySize(width, height, quality) {
   // The UI prepares raster assets at the selected safe size before sending them
   // here, so Figma placement should honor those prepared dimensions instead of
   // shrinking again for grid display. This keeps the canvas result aligned with:
-  // High = max side 2048px, Medium = 1400px, Low = 900px.
+  // Best available default: preserve the largest usable source and only downscale when needed for Figma safety.
   const sourceWidth = numericOrNull(width) || 180;
   const sourceHeight = numericOrNull(height) || 140;
   const maxSide = maxCanvasSideForQuality(quality);
@@ -576,6 +576,36 @@ function base64Decode(value) {
     if (bc++ % 4) output += String.fromCharCode(255 & (bs >> ((-2 * bc) & 6)));
   }
   return output;
+}
+
+
+function frameNameForAssets(assets) {
+  var first = Array.isArray(assets) ? assets.find(function(asset) {
+    return asset && (asset.pageUrl || asset.sourceUrl || asset.originalSrc || asset.remoteSrc || asset.src);
+  }) : null;
+  var source = first ? (first.pageUrl || first.sourceUrl || first.originalSrc || first.remoteSrc || first.src) : '';
+  var domain = domainFromUrl(source);
+  return domain ? ('Site Asset Importer - ' + domain) : 'Site Asset Importer';
+}
+
+function domainFromUrl(value) {
+  try {
+    var match = String(value || '').match(/^https?:\/\/([^\/]+)/i);
+    return match && match[1] ? match[1].replace(/^www\./i, '') : '';
+  } catch (error) {
+    return '';
+  }
+}
+
+function filenameFromAsset(asset) {
+  var source = asset && (asset.originalSrc || asset.sourceUrl || asset.remoteSrc || asset.src) || '';
+  try {
+    var clean = String(source).split('?')[0].split('#')[0];
+    var name = clean.split('/').filter(Boolean).pop() || '';
+    return decodeURIComponent(name).slice(0, 80);
+  } catch (error) {
+    return '';
+  }
 }
 
 function safeNodeName(value) {

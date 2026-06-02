@@ -1,5 +1,5 @@
 {
-  "name": "Inspiration Importer",
+  "name": "Site Asset Importer",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",

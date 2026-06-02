@@ -1,8 +1,8 @@
 {
-  "name": "inspiration-importer-scraper",
-  "version": "0.15.0",
+  "name": "site-asset-importer-scraper",
+  "version": "0.26.0",
   "private": true,
-  "description": "Local scraper/proxy backend for the Inspiration Importer Figma plugin.",
+  "description": "Local scraper/proxy backend for the Site Asset Importer Figma plugin.",
   "main": "server.js",
   "scripts": {
     "dev": "node server.js",

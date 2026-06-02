@@ -1,4 +1,4 @@
-/* Inspiration Importer scraper backend
+/* Site Asset Importer scraper backend
    Run with: npm install && npm run dev
    Then keep http://localhost:8787 running while testing the Figma plugin.
 */
@@ -484,5 +484,5 @@ function contentTypeFromUrl(url) {
 }
 
 app.listen(PORT, () => {
-  console.log('Inspiration Importer v16 scraper running at http://localhost:' + PORT);
+  console.log('Site Asset Importer scraper running at http://localhost:' + PORT);
 });
