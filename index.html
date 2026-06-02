@@ -1,465 +1,480 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Site Asset Importer — Figma Plugin Beta</title>
-  <meta name="description" content="Site Asset Importer helps designers pull images, SVGs, icons, logos, and visual assets from public websites into Figma." />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Site Asset Importer — Web assets to Figma</title>
+  <meta name="description" content="Extract images, SVGs, icons, and logos from public websites into Figma." />
   <style>
     :root {
-      --bg: #f7f4ef;
       --ink: #171717;
-      --muted: #66605a;
-      --card: #fffaf3;
-      --line: #e3d8c9;
-      --accent: #111111;
-      --accent-soft: #efe6d8;
-      --success: #2f6f4e;
-      --radius: 22px;
-      --shadow: 0 22px 70px rgba(25, 20, 15, 0.1);
+      --muted: #626262;
+      --line: #e7e2da;
+      --paper: #fffdf8;
+      --soft: #f6efe7;
+      --soft-2: #edf4ff;
+      --accent: #ff6b35;
+      --accent-2: #7c5cff;
+      --green: #1f9d6a;
+      --shadow: 0 24px 70px rgba(27, 20, 12, .13);
+      --radius: 24px;
     }
 
     * { box-sizing: border-box; }
-
     body {
       margin: 0;
-      background: radial-gradient(circle at top left, #fff7e9 0, var(--bg) 38%, #f3eee7 100%);
-      color: var(--ink);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 5%, rgba(255, 107, 53, .14), transparent 28%),
+        radial-gradient(circle at 85% 0%, rgba(124, 92, 255, .13), transparent 30%),
+        linear-gradient(180deg, #fffaf2 0%, #fffdf8 38%, #f8f6f0 100%);
       line-height: 1.5;
     }
 
     a { color: inherit; }
-
-    .page {
-      width: min(1120px, calc(100% - 36px));
-      margin: 0 auto;
-    }
+    .page { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
 
     header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 28px 0;
-      gap: 18px;
+      padding: 26px 0 18px;
+      gap: 20px;
     }
-
     .brand {
       display: flex;
       align-items: center;
       gap: 12px;
-      font-weight: 750;
-      letter-spacing: -0.02em;
+      font-weight: 780;
+      letter-spacing: -.03em;
+      font-size: 18px;
     }
-
     .mark {
       width: 36px;
       height: 36px;
-      border-radius: 11px;
-      background: var(--ink);
-      color: #fff;
+      border-radius: 12px;
       display: grid;
       place-items: center;
-      font-size: 18px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.12);
+      background: var(--ink);
+      color: white;
+      box-shadow: 0 10px 28px rgba(0,0,0,.16);
     }
-
-    .nav {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
-    .nav a {
-      text-decoration: none;
+    .nav-note {
+      font-size: 13px;
       color: var(--muted);
-      font-size: 14px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.62);
+      backdrop-filter: blur(8px);
     }
 
     .hero {
       display: grid;
-      grid-template-columns: 1.1fr .9fr;
-      gap: 42px;
+      grid-template-columns: 1fr 1.05fr;
+      gap: 46px;
       align-items: center;
-      padding: 56px 0 48px;
+      padding: 48px 0 56px;
     }
-
     .eyebrow {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 7px 12px;
-      border: 1px solid var(--line);
+      font-weight: 700;
+      color: #6d4b00;
+      background: #fff0c2;
+      border: 1px solid #f3d67a;
       border-radius: 999px;
-      background: rgba(255,255,255,.5);
-      color: var(--muted);
+      padding: 7px 11px;
       font-size: 13px;
-      font-weight: 650;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
-
     h1 {
-      margin: 0;
-      font-size: clamp(44px, 7vw, 78px);
-      line-height: .93;
-      letter-spacing: -0.075em;
-      max-width: 780px;
+      font-size: clamp(42px, 7vw, 78px);
+      line-height: .95;
+      letter-spacing: -.075em;
+      margin: 0 0 22px;
     }
-
-    .hero p {
-      color: var(--muted);
-      font-size: clamp(18px, 2vw, 22px);
-      max-width: 680px;
-      margin: 24px 0 0;
+    .subhead {
+      font-size: clamp(18px, 2.2vw, 22px);
+      color: #494949;
+      margin: 0 0 28px;
+      max-width: 620px;
     }
-
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 34px;
-    }
-
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      gap: 10px;
       min-height: 48px;
-      padding: 0 20px;
-      border-radius: 999px;
+      padding: 13px 18px;
+      border-radius: 14px;
       text-decoration: none;
-      font-weight: 750;
-      border: 1px solid var(--ink);
-      transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+      font-weight: 760;
+      border: 1px solid transparent;
+      transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
     }
-
-    .btn:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(0,0,0,.12); }
-    .btn.primary { background: var(--ink); color: #fff; }
-    .btn.secondary { background: rgba(255,255,255,.55); color: var(--ink); }
-
-    .note {
-      margin-top: 16px;
-      color: var(--muted);
-      font-size: 13px;
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary {
+      background: var(--ink);
+      color: #fff;
+      box-shadow: 0 16px 38px rgba(0,0,0,.18);
     }
-
-    .mockup {
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 30px;
-      box-shadow: var(--shadow);
-      padding: 16px;
-      overflow: hidden;
+    .btn-secondary {
+      background: rgba(255,255,255,.76);
+      border-color: var(--line);
+      color: var(--ink);
     }
+    .mini { color: var(--muted); font-size: 13px; margin-top: 14px; }
 
-    .plugin-frame {
-      border-radius: 22px;
-      border: 1px solid #ddd5cb;
-      background: #fbf7f1;
-      padding: 14px;
+    .hero-card {
+      position: relative;
       min-height: 520px;
+      border-radius: 34px;
+      background: linear-gradient(135deg, #ffffff 0%, #fff7ea 55%, #efeaff 100%);
+      border: 1px solid rgba(42, 35, 27, .08);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      padding: 26px;
     }
-
-    .plugin-head {
+    .hero-card:before {
+      content: "";
+      position: absolute;
+      inset: auto -80px -110px auto;
+      width: 260px;
+      height: 260px;
+      background: rgba(255,107,53,.18);
+      border-radius: 50%;
+      filter: blur(4px);
+    }
+    .flow-title {
+      position: relative;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 18px;
       font-size: 13px;
-      font-weight: 800;
-    }
-
-    .beta {
-      background: var(--accent-soft);
-      border: 1px solid var(--line);
       color: var(--muted);
-      border-radius: 999px;
-      padding: 4px 8px;
-      font-size: 11px;
-      letter-spacing: .05em;
     }
-
-    .input-bar {
-      height: 42px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: #fff;
-      display: flex;
-      align-items: center;
-      padding: 0 12px;
-      color: #91887f;
-      font-size: 12px;
-      margin-bottom: 12px;
-    }
-
-    .filters {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 12px;
-      flex-wrap: wrap;
-    }
-
     .pill {
       border: 1px solid var(--line);
-      background: #fff;
+      background: rgba(255,255,255,.72);
       border-radius: 999px;
-      padding: 6px 9px;
-      color: var(--muted);
-      font-size: 11px;
+      padding: 6px 10px;
+      font-size: 12px;
       font-weight: 700;
+      color: #4f4a43;
     }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
+    .browser {
+      position: relative;
+      width: 58%;
+      border: 1px solid #ddd6ce;
+      border-radius: 18px;
+      background: white;
+      box-shadow: 0 16px 36px rgba(0,0,0,.10);
+      overflow: hidden;
+      z-index: 3;
     }
+    .browser-top { height: 34px; display: flex; align-items: center; gap: 7px; padding: 0 12px; background: #f4f1ec; border-bottom: 1px solid #e6ded5; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #cfc7bd; }
+    .urlbar { margin-left: 8px; flex: 1; height: 15px; border-radius: 999px; background: #fff; border: 1px solid #e4ddd5; }
+    .site-hero { height: 122px; background: linear-gradient(120deg, #111, #4231ff 52%, #ff7a3d); margin: 14px; border-radius: 14px; }
+    .site-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 14px 14px; }
+    .tile { height: 54px; border-radius: 12px; background: #eee8df; }
+    .tile:nth-child(2) { background: #d9e9ff; }
+    .tile:nth-child(3) { background: #ffe1d3; }
 
-    .asset-card {
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 8px;
-      min-height: 142px;
+    .arrow {
+      position: absolute;
+      top: 208px;
+      left: 45%;
+      width: 118px;
+      height: 80px;
+      z-index: 2;
+    }
+    .figma-board {
+      position: absolute;
+      right: 26px;
+      bottom: 46px;
+      width: 60%;
+      border: 1px solid #dcd4cb;
+      border-radius: 22px;
+      background: #fbfaf8;
+      box-shadow: 0 22px 48px rgba(0,0,0,.13);
+      padding: 18px;
+      z-index: 4;
+    }
+    .board-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; font-weight: 780; }
+    .board-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .asset {
+      aspect-ratio: 1 / .82;
+      border-radius: 14px;
+      background: white;
+      border: 1px solid #e3ddd4;
+      overflow: hidden;
       position: relative;
     }
-
+    .asset:nth-child(1) { background: linear-gradient(135deg,#ff865c,#141414); }
+    .asset:nth-child(2) { background: linear-gradient(135deg,#edf5ff,#63a7ff); }
+    .asset:nth-child(3) { background: linear-gradient(135deg,#fff,#202020); }
+    .asset:nth-child(4) { background: linear-gradient(135deg,#ffefe2,#ffb088); }
+    .asset:nth-child(5) { background: linear-gradient(135deg,#eee8ff,#7c5cff); }
+    .asset:nth-child(6) { background: linear-gradient(135deg,#f1f1f1,#b8b8b8); }
     .check {
-      width: 18px;
-      height: 18px;
-      border-radius: 5px;
-      border: 1px solid #a99f94;
-      background: #fff;
       position: absolute;
       top: 8px;
       left: 8px;
-    }
-
-    .thumb {
-      height: 74px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #ece4d8, #d6c7b8);
-      margin-bottom: 8px;
-    }
-
-    .asset-card:nth-child(2) .thumb { background: linear-gradient(135deg, #1d1d1d, #575757); }
-    .asset-card:nth-child(3) .thumb { background: linear-gradient(135deg, #f0c8a0, #d8895a); }
-    .asset-card:nth-child(4) .thumb { background: linear-gradient(135deg, #d3e3f0, #7aa6c9); }
-
-    .meta-line {
-      height: 8px;
-      width: 72%;
-      background: #eee8df;
-      border-radius: 999px;
-      margin-bottom: 6px;
-    }
-
-    .meta-line.short { width: 48%; }
-
-    section { padding: 42px 0; }
-
-    .section-head {
-      max-width: 760px;
-      margin-bottom: 22px;
-    }
-
-    h2 {
-      margin: 0 0 10px;
-      font-size: clamp(28px, 4vw, 42px);
-      line-height: 1.05;
-      letter-spacing: -0.055em;
-    }
-
-    .section-head p, .card p, .steps p, .limitations p {
-      color: var(--muted);
-      margin: 0;
-    }
-
-    .cards {
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      background: var(--green);
+      color: white;
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
+      place-items: center;
+      font-size: 13px;
+      font-weight: 900;
     }
+    .metadata-card {
+      position: absolute;
+      left: 28px;
+      bottom: 34px;
+      width: 195px;
+      border-radius: 18px;
+      border: 1px solid #ded6cd;
+      background: rgba(255,255,255,.86);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 14px 36px rgba(0,0,0,.10);
+      padding: 14px;
+      z-index: 5;
+      font-size: 12px;
+      color: #4e4a44;
+    }
+    .metadata-card strong { display: block; color: var(--ink); font-size: 13px; margin-bottom: 7px; }
+    .meta-row { display: flex; justify-content: space-between; border-top: 1px solid #ece5dd; padding-top: 7px; margin-top: 7px; }
 
-    .card, .steps, .limitations, .feedback {
-      background: rgba(255,255,255,.6);
+    section { padding: 34px 0; }
+    .section-head { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin-bottom: 18px; }
+    h2 { font-size: clamp(28px, 4vw, 42px); letter-spacing: -.05em; line-height: 1; margin: 0; }
+    .section-intro { color: var(--muted); max-width: 620px; margin: 10px 0 0; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .card {
       border: 1px solid var(--line);
+      background: rgba(255,255,255,.72);
       border-radius: var(--radius);
       padding: 22px;
-      box-shadow: 0 12px 38px rgba(25, 20, 15, .05);
+      box-shadow: 0 12px 34px rgba(0,0,0,.05);
     }
-
-    .card h3 {
-      margin: 0 0 8px;
-      font-size: 18px;
-      letter-spacing: -0.025em;
-    }
-
-    .steps ol, .feedback ul {
-      margin: 14px 0 0;
-      padding-left: 20px;
-      color: var(--muted);
-    }
-
-    .steps li, .feedback li { margin: 8px 0; }
-
-    .test-urls {
+    .card h3 { margin: 0 0 8px; font-size: 18px; letter-spacing: -.02em; }
+    .card p { margin: 0; color: var(--muted); }
+    .num {
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
+      background: var(--ink);
+      color: white;
       display: grid;
-      gap: 10px;
-      margin-top: 14px;
+      place-items: center;
+      font-weight: 800;
+      margin-bottom: 14px;
     }
-
-    code, .url {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-    }
-
-    .url {
-      display: block;
-      padding: 12px 14px;
+    .feature-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 16px; }
+    .feature {
       background: #fff;
       border: 1px solid var(--line);
-      border-radius: 14px;
-      color: #554f49;
-      font-size: 13px;
-      overflow-wrap: anywhere;
+      border-radius: 18px;
+      padding: 14px 16px;
+      font-weight: 700;
+      color: #2d2d2d;
     }
-
+    .feature span { color: var(--green); margin-right: 8px; }
+    .callout {
+      display: grid;
+      grid-template-columns: 1.3fr .7fr;
+      gap: 20px;
+      align-items: center;
+      border: 1px solid #ead6c8;
+      border-radius: 30px;
+      padding: 28px;
+      background: linear-gradient(135deg, #fff 0%, #fff2e8 100%);
+      box-shadow: var(--shadow);
+    }
+    .callout h2 { max-width: 700px; }
+    .small-list { margin: 14px 0 0; padding-left: 18px; color: var(--muted); }
+    .small-list li { margin: 6px 0; }
+    code, .code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background: #f1ede6;
+      border: 1px solid #e4ddd4;
+      padding: 2px 6px;
+      border-radius: 7px;
+      font-size: .92em;
+    }
     .footer {
-      color: var(--muted);
       border-top: 1px solid var(--line);
-      padding: 28px 0 44px;
+      margin-top: 34px;
+      padding: 28px 0 42px;
+      color: var(--muted);
       font-size: 14px;
     }
 
-    @media (max-width: 860px) {
-      .hero { grid-template-columns: 1fr; padding-top: 34px; }
-      .cards { grid-template-columns: 1fr; }
+    @media (max-width: 880px) {
+      .hero { grid-template-columns: 1fr; padding-top: 24px; }
+      .hero-card { min-height: 480px; }
+      .grid-3, .feature-list, .callout { grid-template-columns: 1fr; }
+      .browser { width: 70%; }
+      .figma-board { width: 68%; }
       header { align-items: flex-start; flex-direction: column; }
-      .mockup { max-width: 430px; }
+    }
+
+    @media (max-width: 560px) {
+      .page { width: min(100% - 22px, 1120px); }
+      .hero-card { min-height: 560px; padding: 16px; }
+      .browser { width: 94%; }
+      .figma-board { width: calc(100% - 32px); right: 16px; bottom: 84px; }
+      .metadata-card { left: 16px; bottom: 18px; width: calc(100% - 32px); }
+      .arrow { display: none; }
+      .actions .btn { width: 100%; }
     }
   </style>
 </head>
 <body>
   <div class="page">
     <header>
-      <div class="brand"><div class="mark">✦</div> Inspiration Importer</div>
-      <nav class="nav" aria-label="Main navigation">
-        <a href="#how">How it works</a>
-        <a href="#install">Install</a>
-        <a href="#feedback">Feedback</a>
-      </nav>
+      <div class="brand"><div class="mark">SA</div> Site Asset Importer</div>
+      <div class="nav-note">Private beta · Figma plugin</div>
     </header>
 
     <main>
       <section class="hero">
         <div>
-          <div class="eyebrow">Private beta · Figma plugin</div>
-          <h1>Pull website inspiration into Figma faster.</h1>
-          <p>Extract images, SVGs, icons, logos, and visual assets from public webpages. Preview what was found, select what you want, and import it directly onto your Figma canvas.</p>
+          <div class="eyebrow">Web assets to Figma</div>
+          <h1>Collect website visuals without the manual hunt.</h1>
+          <p class="subhead">Site Asset Importer extracts images, SVGs, icons, and logos from public websites so designers can preview, select, and import useful assets into a clean Figma board.</p>
           <div class="actions">
-            <a class="btn primary" href="inspiration-importer-beta.zip" download>Download beta ZIP</a>
-            <a class="btn secondary" href="#install">How to install</a>
+            <a class="btn btn-primary" href="site-asset-importer-beta-v28.zip" download>Download beta ZIP</a>
+            <a class="btn btn-secondary" href="#install">How to install</a>
           </div>
-          <div class="note">Some sites block extraction. The plugin works best with public pages and direct image URLs.</div>
+          <p class="mini">Works best with public pages and direct image URLs. Some sites may block extraction.</p>
         </div>
 
-        <div class="mockup" aria-label="Plugin interface mockup">
-          <div class="plugin-frame">
-            <div class="plugin-head"><span>Inspiration Importer</span><span class="beta">BETA</span></div>
-            <div class="input-bar">https://example.com</div>
-            <div class="filters">
-              <span class="pill">ALL</span><span class="pill">SVG</span><span class="pill">PNG</span><span class="pill">JPG</span><span class="pill">WEBP</span>
+        <div class="hero-card" aria-label="Illustration of website assets imported into Figma">
+          <div class="flow-title"><span>Paste a public URL</span><span class="pill">Best available</span></div>
+
+          <div class="browser">
+            <div class="browser-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar"></span></div>
+            <div class="site-hero"></div>
+            <div class="site-row"><div class="tile"></div><div class="tile"></div><div class="tile"></div></div>
+          </div>
+
+          <svg class="arrow" viewBox="0 0 160 100" fill="none" aria-hidden="true">
+            <path d="M6 58C42 8 94 20 130 46" stroke="#171717" stroke-width="5" stroke-linecap="round" stroke-dasharray="10 10"/>
+            <path d="M127 29L146 57L112 58" stroke="#171717" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+
+          <div class="figma-board">
+            <div class="board-head"><span>Figma asset board</span><span class="pill">6 selected</span></div>
+            <div class="board-grid">
+              <div class="asset"><span class="check">✓</span></div>
+              <div class="asset"><span class="check">✓</span></div>
+              <div class="asset"><span class="check">✓</span></div>
+              <div class="asset"><span class="check">✓</span></div>
+              <div class="asset"><span class="check">✓</span></div>
+              <div class="asset"><span class="check">✓</span></div>
             </div>
-            <div class="grid">
-              <div class="asset-card"><div class="check"></div><div class="thumb"></div><div class="meta-line"></div><div class="meta-line short"></div></div>
-              <div class="asset-card"><div class="check"></div><div class="thumb"></div><div class="meta-line"></div><div class="meta-line short"></div></div>
-              <div class="asset-card"><div class="check"></div><div class="thumb"></div><div class="meta-line"></div><div class="meta-line short"></div></div>
-              <div class="asset-card"><div class="check"></div><div class="thumb"></div><div class="meta-line"></div><div class="meta-line short"></div></div>
-            </div>
+          </div>
+
+          <div class="metadata-card">
+            <strong>Useful assets first</strong>
+            <div class="meta-row"><span>Duplicates</span><span>hidden</span></div>
+            <div class="meta-row"><span>Source links</span><span>open/copy</span></div>
+            <div class="meta-row"><span>Unavailable</span><span>listed</span></div>
           </div>
         </div>
       </section>
 
-      <section id="how">
+      <section>
         <div class="section-head">
-          <h2>Built for visual research, audits, and rebuilds.</h2>
-          <p>Inspiration Importer helps design teams quickly collect useful visual assets from live websites without manually saving images one by one.</p>
+          <div>
+            <h2>Built for visual research.</h2>
+            <p class="section-intro">Use it when you need a fast asset board for competitive audits, redesigns, moodboards, brand references, and live-site inspiration.</p>
+          </div>
         </div>
-        <div class="cards">
-          <div class="card">
-            <h3>Paste a URL</h3>
-            <p>Use a public website URL or a direct image URL. The plugin scans for images, SVGs, icons, logos, and visual assets.</p>
-          </div>
-          <div class="card">
-            <h3>Preview and filter</h3>
-            <p>Review assets in a grid, filter by format, hide tiny assets, hide unavailable previews, and open original source links.</p>
-          </div>
-          <div class="card">
-            <h3>Import to Figma</h3>
-            <p>Select visible assets and import them directly onto your canvas. Quality settings keep large images Figma-safe.</p>
-          </div>
+        <div class="grid-3">
+          <div class="card"><div class="num">1</div><h3>Paste a website URL</h3><p>Start with a public webpage or a direct image URL.</p></div>
+          <div class="card"><div class="num">2</div><h3>Preview useful assets</h3><p>Review images, SVGs, icons, and logos with duplicates and tiny assets cleaned up by default.</p></div>
+          <div class="card"><div class="num">3</div><h3>Import into Figma</h3><p>Select what you want and bring assets onto the canvas as a clean board.</p></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>What’s included in beta</h2>
+        <div class="feature-list">
+          <div class="feature"><span>✓</span>Best available image by default</div>
+          <div class="feature"><span>✓</span>Open source and Copy URL links</div>
+          <div class="feature"><span>✓</span>Duplicate sizes hidden by default</div>
+          <div class="feature"><span>✓</span>Unavailable assets still listed</div>
+          <div class="feature"><span>✓</span>SVG, PNG, JPG, and WEBP filters</div>
+          <div class="feature"><span>✓</span>Friendly blocked-site messaging</div>
         </div>
       </section>
 
       <section id="install">
-        <div class="steps">
-          <h2>Install the private beta</h2>
-          <p>Download the beta folder, then import the plugin manifest in Figma Desktop.</p>
-          <div class="actions">
-            <a class="btn primary" href="inspiration-importer-beta.zip" download>Download beta ZIP</a>
+        <div class="callout">
+          <div>
+            <h2>Install the private beta</h2>
+            <p class="section-intro">Download the ZIP, unzip it, then import the manifest in Figma Desktop.</p>
+            <ol class="small-list">
+              <li>Download and unzip the beta folder.</li>
+              <li>Open <strong>Figma Desktop</strong>.</li>
+              <li>Go to <strong>Plugins → Development → Import plugin from manifest…</strong></li>
+              <li>Select the <span class="code">manifest.json</span> file.</li>
+              <li>Run <strong>Plugins → Development → Site Asset Importer</strong>.</li>
+            </ol>
           </div>
-          <ol>
-            <li>Download and unzip the beta folder.</li>
-            <li>Open <strong>Figma Desktop</strong>.</li>
-            <li>Go to <strong>Plugins → Development → Import plugin from manifest…</strong></li>
-            <li>Select the <code>manifest.json</code> file from the unzipped folder.</li>
-            <li>Run <strong>Plugins → Development → Inspiration Importer</strong>.</li>
-          </ol>
+          <div>
+            <a class="btn btn-primary" href="site-asset-importer-beta-v28.zip" download>Download beta ZIP</a>
+            <p class="mini">No local server or Terminal needed. The scraper backend is hosted.</p>
+          </div>
         </div>
       </section>
 
       <section>
-        <div class="section-head">
-          <h2>Good test URLs</h2>
-          <p>Try these first to confirm the plugin is working.</p>
-        </div>
-        <div class="test-urls">
-          <span class="url">https://www.wikipedia.org</span>
-          <span class="url">https://www.nba.com</span>
-          <span class="url">https://kith.com</span>
-          <span class="url">https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg</span>
+        <h2>Known limitation</h2>
+        <p class="section-intro">Some websites block extraction. When that happens, the plugin will say:</p>
+        <div class="card" style="margin-top:16px; max-width: 620px;">
+          <h3>This site blocks extraction.</h3>
+          <p>Try another public page or use a direct image URL instead.</p>
         </div>
       </section>
 
       <section>
-        <div class="limitations">
-          <h2>Known limitation</h2>
-          <p>Some websites block extraction. If that happens, the plugin will say:</p>
-          <div class="url" style="margin-top: 14px;">This site blocks extraction. Try another public page or use a direct image URL instead.</div>
-          <p style="margin-top: 14px;">That means the website refused extraction. The plugin is still working.</p>
-        </div>
+        <h2>Good test URLs</h2>
+        <p class="section-intro">Try a few different types of pages to see how the asset grid behaves.</p>
+        <ul class="small-list">
+          <li><span class="code">https://www.wikipedia.org</span></li>
+          <li><span class="code">https://www.nba.com</span></li>
+          <li><span class="code">https://kith.com</span></li>
+          <li>Direct image URL: <span class="code">https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg</span></li>
+        </ul>
       </section>
 
-      <section id="feedback">
-        <div class="feedback">
-          <h2>Beta feedback</h2>
-          <p>If you test the beta, please share what worked, what felt confusing, and which URLs you tried.</p>
-          <ul>
-            <li>Were you able to install the plugin?</li>
-            <li>Did assets appear in the grid?</li>
-            <li>Were the filters useful?</li>
-            <li>Did “Open source” make sense?</li>
-            <li>Were you able to import selected assets into Figma?</li>
-            <li>Would this help your design workflow?</li>
-          </ul>
-        </div>
+      <section>
+        <h2>Feedback questions</h2>
+        <ul class="small-list">
+          <li>Were you able to install and run the plugin?</li>
+          <li>What URLs did you test?</li>
+          <li>Did the asset grid feel useful and understandable?</li>
+          <li>Did Open source and Copy URL help?</li>
+          <li>Were you able to import selected assets into Figma?</li>
+          <li>What felt confusing or missing?</li>
+        </ul>
       </section>
     </main>
 
     <footer class="footer">
-      Inspiration Importer is in private beta. Works best with public websites and direct image URLs.
+      Site Asset Importer is a private beta for extracting publicly available visual assets into Figma. Use third-party assets responsibly and only where you have permission.
     </footer>
   </div>
 </body>
