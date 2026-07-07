@@ -1,4 +1,4 @@
-# Site Asset Importer — Beta
+# Inspiration Importer — Beta
 
 **Extract images, SVGs, icons, and logos from public websites into Figma.**
 
