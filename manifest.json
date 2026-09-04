@@ -1,5 +1,5 @@
 {
-  "name": "Site Asset Importer",
+  "name": "Inspiration Importer",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",
@@ -10,7 +10,6 @@
   "networkAccess": {
     "allowedDomains": [
       "https://inspirationimporter.onrender.com",
-      "http://localhost:8787",
       "*"
     ],
     "devAllowedDomains": [
@@ -18,6 +17,6 @@
       "http://localhost:8787",
       "*"
     ],
-    "reasoning": "The plugin fetches user-provided direct image URLs and talks to the hosted scraper/proxy backend for website extraction."
+    "reasoning": "Inspiration Importer extracts visual assets from user-provided public webpages through its hosted backend and fetches user-selected public image assets for import into Figma."
   }
 }
