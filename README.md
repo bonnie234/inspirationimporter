@@ -1,51 +1,77 @@
 # Inspiration Importer — Beta
 
-**Extract images, SVGs, icons, and logos from public websites into Figma.**
+**Collect visual inspiration from public websites and bring selected assets into Figma.**
 
-Site Asset Importer helps designers pull visual assets from public webpages into a clean Figma asset board. Paste a URL, preview extracted assets, select what you need, and import them directly onto the canvas.
+Inspiration Importer helps designers scan a public webpage, review the visual assets it contains, select useful references, and import them into a clean Figma frame.
 
-## What changed in v27
+## v27 launch-stability update
 
-- Keeps **best available** image quality by default.
-- Hides smaller responsive duplicate image sizes by default, including Amazon/Shopbop CDN size variants like `._QL80_UX768_...jpg`, `._SX1500_.jpg`, and `._AC_SL1500_.jpg`.
-- Adds **Show duplicate sizes** for users who want to inspect every version.
-- Sorts useful/larger assets first.
-- Results summary now includes duplicate sizes hidden, unavailable assets, and tiny hidden assets.
-- Keeps **Open source** and **Copy URL** on asset cards.
-- Imported frames are named **Site Asset Importer - domain.com**.
-- Keeps the hosted backend: `https://inspirationimporter.onrender.com`.
+- Removed the visible **Self Test** development control.
+- Added **AVIF** recognition, filtering, direct-image URL support, and raster preparation for Figma import.
+- Kept the hosted scraper backend as the single webpage-extraction path.
+- Kept the plugin no-build and easy to install from `manifest.json`.
+- Preserved the existing favorites storage key and the stable v26 import behavior.
+- Imported frames remain named **Inspiration Importer - domain.com**.
 
-## How to install the beta
+## Architecture
 
-1. Download and unzip the beta folder.
+```text
+Public webpage
+      ↓
+Inspiration Importer UI
+      ↓
+Hosted extraction backend
+      ↓
+Preview / filter / select
+      ↓
+Backend asset fetch + Figma-safe preparation
+      ↓
+Figma plugin main process
+      ↓
+Inspiration Importer frame on canvas
+```
+
+Direct image URLs skip webpage extraction and are passed directly into the preview/import flow.
+
+## Files
+
+- `manifest.json` — Figma plugin configuration and network permissions.
+- `ui.html` — complete plugin interface and UI-side extraction/preparation logic.
+- `code.js` — Figma-side direct-image validation and canvas import logic.
+- `README.md` — installation, usage, and architecture notes.
+
+This beta intentionally keeps the UI JavaScript inline in `ui.html` so the plugin remains a simple no-build Figma development plugin.
+
+## Install
+
+1. Download and unzip the plugin folder.
 2. Open **Figma Desktop**.
 3. Go to **Plugins → Development → Import plugin from manifest…**
-4. Select the `manifest.json` file from the unzipped folder.
-5. Run **Plugins → Development → Site Asset Importer**.
+4. Select `manifest.json`.
+5. Run **Plugins → Development → Inspiration Importer**.
 
-## How to use
+## Use
 
-1. Paste a public website URL or direct image URL.
+1. Paste a public website URL or a direct image URL.
 2. Click **Extract Assets**.
 3. Review the asset grid.
-4. Use filters like SVG, PNG, JPG, WEBP, Hide tiny, Show unavailable, or Show duplicate sizes.
-5. Select the assets you want.
+4. Filter by SVG, PNG, JPG, WEBP, or AVIF and optionally hide tiny or unavailable assets.
+5. Select the references you want.
 6. Click **Import Selected**.
-7. The selected assets will appear on your Figma canvas.
+7. Figma creates an **Inspiration Importer - domain.com** frame containing the imported assets.
 
-## Best available behavior
+## Quality behavior
 
-Site Asset Importer automatically prefers the best available image source it can find. If a site provides the same image in multiple responsive sizes, the plugin shows the largest/best version by default and hides smaller duplicate sizes.
+The UI requests the best available image source. Raster assets are resized only when needed to keep the longest side at or below 2048 px before Figma import.
 
-Use **Show duplicate sizes** when you want to inspect every responsive version of the same image.
+## Backend
 
-Large images are resized only when needed to keep imports safe for Figma.
+Website extraction and protected/hotlinked asset fetching use:
+
+`https://inspirationimporter.onrender.com`
+
+The backend is now the authoritative webpage extraction path. The Figma main process no longer attempts to download and parse webpage HTML itself.
 
 ## Known limitation
 
-Some websites block extraction. If that happens, the plugin will show:
-
-> This site blocks extraction.  
-> Try another public page or use a direct image URL instead.
-
-This means the website refused extraction. The plugin is still working.
+Some websites block scraping or protect image assets. When that happens, Inspiration Importer keeps the failure understandable and, where possible, leaves the source URL available so the designer can inspect the asset directly.
