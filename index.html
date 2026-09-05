@@ -3,81 +3,612 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Inspiration Importer is a Figma plugin for collecting useful visual assets from public websites." />
-  <title>Inspiration Importer — Website visuals to Figma</title>
+  <title>Inspiration Importer</title>
+  <meta name="description" content="Collect visual inspiration from public websites and bring selected assets into Figma." />
   <style>
-    :root{--bg:#f6f6f3;--panel:#fff;--ink:#161616;--muted:#6d6d68;--line:#deded8;--accent:#111;--soft:#ecece7;--max:1120px}
-    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.5}
-    a{color:inherit}.wrap{width:min(calc(100% - 40px),var(--max));margin:auto}.nav{display:flex;justify-content:space-between;align-items:center;padding:24px 0}.brand{font-weight:750;letter-spacing:-.02em}.tag{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 9px;background:rgba(255,255,255,.6)}
-    .hero{padding:74px 0 66px;border-top:1px solid var(--line)}.eyebrow{font-size:13px;color:var(--muted);margin-bottom:18px}.hero h1{font-size:clamp(42px,7vw,82px);line-height:.98;letter-spacing:-.055em;max-width:900px;margin:0 0 26px}.lede{font-size:20px;max-width:720px;color:#41413e;margin:0 0 30px}.actions{display:flex;gap:10px;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:1px solid var(--ink);border-radius:999px;padding:11px 17px;font-weight:700;font-size:14px}.btn.primary{background:var(--ink);color:#fff}.btn.secondary{background:transparent}.note{font-size:13px;color:var(--muted);margin-top:16px}
-    section{padding:62px 0;border-top:1px solid var(--line)}h2{font-size:32px;letter-spacing:-.035em;margin:0 0 16px}.intro{max-width:680px;color:#4c4c47;margin:0 0 34px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px}.num{font-size:12px;color:var(--muted);margin-bottom:28px}.card h3{margin:0 0 7px;font-size:17px}.card p{margin:0;color:var(--muted);font-size:14px}.features{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:18px;overflow:hidden}.feature{background:var(--panel);padding:18px 20px;font-size:14px}.feature::before{content:"✓";margin-right:9px;font-weight:800}
-    .install{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:start}.steps{margin:0;padding-left:22px}.steps li{margin:0 0 10px}.limit{background:#171717;color:#fff;border-radius:18px;padding:24px}.limit h3{margin:0 0 8px}.limit p{margin:0;color:#c9c9c4}.footer{padding:32px 0 48px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
-    @media(max-width:760px){.grid3,.features,.install{grid-template-columns:1fr}.hero{padding-top:50px}.wrap{width:min(calc(100% - 28px),var(--max))}}
+    :root{
+      --bg:#f4efe7;
+      --text:#111111;
+      --muted:#5f5b55;
+      --line:#cfc8bd;
+      --panel:#f7f3ec;
+      --accent:#111111;
+      --max:1440px;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:Arial, Helvetica, sans-serif;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    a{color:inherit;text-decoration:none}
+    img{display:block;max-width:100%}
+    button{font:inherit}
+
+    .page{
+      width:min(calc(100% - 48px), var(--max));
+      margin:0 auto;
+    }
+
+    .topbar{
+      display:grid;
+      grid-template-columns:1fr auto auto;
+      align-items:center;
+      gap:32px;
+      padding:24px 0;
+      border-bottom:1px solid transparent;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-size:13px;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      white-space:nowrap;
+    }
+
+    .brand-mark{
+      width:20px;
+      height:20px;
+      background:var(--text);
+      display:inline-block;
+      transform:rotate(6deg);
+    }
+
+    .beta{
+      font-size:10px;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      margin-left:4px;
+      opacity:.75;
+    }
+
+    .nav{
+      display:flex;
+      gap:28px;
+      font-size:11px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:52px;
+      padding:0 22px;
+      border:1px solid var(--text);
+      background:transparent;
+      font-size:12px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      transition:.2s ease;
+    }
+
+    .btn:hover{transform:translateY(-2px)}
+    .btn.primary{background:var(--text);color:var(--bg)}
+    .btn.link{
+      min-height:auto;
+      padding:0 0 4px;
+      border:0;
+      border-bottom:1px solid currentColor;
+    }
+
+    .hero{
+      display:grid;
+      grid-template-columns:minmax(0, 1.02fr) minmax(460px, .98fr);
+      gap:64px;
+      align-items:center;
+      min-height:710px;
+      padding:48px 0 60px;
+    }
+
+    .eyebrow{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-size:11px;
+      letter-spacing:.11em;
+      text-transform:uppercase;
+      margin-bottom:22px;
+    }
+    .eyebrow::after{
+      content:"";
+      width:54px;
+      height:1px;
+      background:var(--text);
+      opacity:.55;
+    }
+
+    h1{
+      margin:0;
+      max-width:780px;
+      font-size:clamp(64px, 7vw, 116px);
+      line-height:.88;
+      letter-spacing:-.055em;
+      font-weight:500;
+    }
+
+    .serif{
+      display:block;
+      font-family:Georgia, "Times New Roman", serif;
+      font-style:italic;
+      font-weight:400;
+      letter-spacing:-.045em;
+      margin-top:12px;
+    }
+
+    .hero-copy{
+      max-width:620px;
+      margin:34px 0 32px;
+      font-size:18px;
+      line-height:1.45;
+      color:#26231f;
+    }
+
+    .hero-actions{
+      display:flex;
+      gap:28px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .micro{
+      margin-top:20px;
+      font-size:10px;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+
+    .visual{
+      position:relative;
+      min-height:590px;
+    }
+
+    .browser-card{
+      position:absolute;
+      top:32px;
+      left:30px;
+      width:64%;
+      aspect-ratio:1.38;
+      background:linear-gradient(135deg,#d9dee2,#b7c5cc 45%,#a9947f 46%,#ddd3c5);
+      border:1px solid rgba(17,17,17,.14);
+      box-shadow:0 20px 50px rgba(0,0,0,.06);
+      overflow:hidden;
+    }
+
+    .browser-card::before{
+      content:"● ● ●";
+      position:absolute;
+      top:10px;
+      left:12px;
+      font-size:8px;
+      letter-spacing:3px;
+      z-index:3;
+    }
+
+    .browser-card::after{
+      content:"";
+      position:absolute;
+      inset:30px 18px 18px;
+      background:
+        linear-gradient(110deg,rgba(255,255,255,.8),rgba(255,255,255,.1) 40%),
+        linear-gradient(35deg,#9b8a77 0 30%,#d9d9d9 31% 55%,#6f777a 56% 100%);
+    }
+
+    .plugin-card{
+      position:absolute;
+      right:0;
+      top:160px;
+      width:46%;
+      min-width:300px;
+      padding:28px;
+      background:rgba(247,243,236,.96);
+      border:1px solid rgba(17,17,17,.12);
+      box-shadow:0 18px 45px rgba(0,0,0,.06);
+      z-index:4;
+    }
+
+    .plugin-title{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-size:18px;
+      margin-bottom:34px;
+    }
+
+    .figma-dots{
+      width:24px;height:34px;position:relative;display:inline-block;
+    }
+    .figma-dots span{position:absolute;width:11px;height:11px;border-radius:50%;background:#111}
+    .figma-dots span:nth-child(1){left:0;top:0}
+    .figma-dots span:nth-child(2){left:11px;top:0}
+    .figma-dots span:nth-child(3){left:0;top:11px}
+    .figma-dots span:nth-child(4){left:11px;top:11px}
+    .figma-dots span:nth-child(5){left:0;top:22px}
+
+    .plugin-list{
+      display:grid;
+      gap:24px;
+      font-size:14px;
+    }
+    .plugin-row{display:grid;grid-template-columns:22px 1fr;gap:14px;align-items:center}
+    .icon{
+      width:16px;height:16px;border:1.5px solid currentColor;border-radius:50%;
+    }
+    .icon.square{border-radius:2px}
+    .icon.line{border:0;border-bottom:1.5px solid currentColor;border-radius:0}
+
+    .sample{
+      position:absolute;
+      background:#d2cec6;
+      border:1px solid rgba(17,17,17,.08);
+      box-shadow:0 10px 30px rgba(0,0,0,.05);
+      z-index:2;
+    }
+    .sample.one{width:118px;height:170px;left:22%;top:285px;background:linear-gradient(160deg,#263329,#596450)}
+    .sample.two{width:100px;height:120px;left:10%;top:410px;background:linear-gradient(135deg,#c6b49e,#7b6657)}
+    .sample.three{width:112px;height:148px;left:35%;top:435px;background:linear-gradient(160deg,#0e1a1d,#42535a)}
+    .sample.four{width:120px;height:100px;left:48%;top:505px;background:linear-gradient(150deg,#e7e0d5,#c7beb2)}
+
+    .scribble{
+      position:absolute;
+      left:0;
+      bottom:34px;
+      font-family:Georgia, "Times New Roman", serif;
+      font-style:italic;
+      font-size:22px;
+      line-height:1.1;
+      transform:rotate(-5deg);
+    }
+
+    .section{
+      padding:22px 0 62px;
+      border-top:1px solid var(--line);
+    }
+
+    .section-head{
+      display:grid;
+      grid-template-columns:42px 1fr;
+      gap:8px;
+      align-items:start;
+      padding:0 0 26px;
+      font-size:11px;
+      letter-spacing:.13em;
+      text-transform:uppercase;
+    }
+
+    .steps{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      border-top:1px solid transparent;
+    }
+
+    .step{
+      position:relative;
+      min-height:220px;
+      padding:0 36px 0 0;
+      border-right:1px solid var(--line);
+    }
+    .step:not(:first-child){padding-left:36px}
+    .step:last-child{border-right:0}
+    .step-num{
+      font-family:Georgia, serif;
+      font-size:60px;
+      margin-bottom:8px;
+      line-height:1;
+    }
+    .step h3{
+      margin:0 0 18px;
+      font-size:28px;
+      line-height:.95;
+      font-weight:500;
+      letter-spacing:-.03em;
+    }
+    .step p{
+      margin:0;
+      max-width:220px;
+      font-size:15px;
+      line-height:1.45;
+      color:#28241f;
+    }
+
+    .designers{
+      display:grid;
+      grid-template-columns:.8fr 1.35fr .55fr;
+      gap:48px;
+      align-items:start;
+    }
+
+    .big-copy{
+      margin:0 0 18px;
+      font-size:52px;
+      line-height:.94;
+      font-weight:500;
+      letter-spacing:-.045em;
+    }
+    .benefit-copy{
+      font-size:16px;
+      line-height:1.55;
+      color:#28241f;
+    }
+
+    .format-grid{
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:14px;
+    }
+    .format-card{
+      aspect-ratio:.72;
+      border-radius:8px;
+      overflow:hidden;
+      background:#d8d1c7;
+      border:1px solid rgba(17,17,17,.08);
+    }
+    .format-card:nth-child(1){background:linear-gradient(160deg,#24382b,#5a6a57)}
+    .format-card:nth-child(2){background:linear-gradient(140deg,#eee8df,#cfc4b5)}
+    .format-card:nth-child(3){background:linear-gradient(155deg,#112027,#4f626c)}
+    .format-card:nth-child(4){background:linear-gradient(160deg,#dad3c8,#9c7c63)}
+    .format-card:nth-child(5){background:linear-gradient(145deg,#ede7dd,#c8bdaf)}
+    .format-label{
+      margin-top:10px;
+      font-size:10px;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      text-align:center;
+    }
+
+    .use-list{
+      display:grid;
+      gap:12px;
+      font-size:11px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+    }
+    .use-list span{
+      display:block;
+      padding-bottom:8px;
+      border-bottom:1px solid var(--line);
+    }
+
+    .beta-section{
+      display:grid;
+      grid-template-columns:.8fr 1.1fr .8fr;
+      gap:48px;
+      align-items:start;
+    }
+    .beta-copy{
+      font-size:15px;
+      line-height:1.5;
+      color:#29251f;
+    }
+
+    footer{
+      display:grid;
+      grid-template-columns:1fr 1fr auto;
+      align-items:end;
+      gap:24px;
+      padding:28px 0 36px;
+      border-top:1px solid var(--line);
+      font-size:10px;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+    }
+
+    .footer-links{
+      display:flex;
+      gap:28px;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+    }
+
+    @media (max-width:1100px){
+      .topbar{grid-template-columns:1fr auto}
+      .nav{display:none}
+      .hero{grid-template-columns:1fr;min-height:auto}
+      .visual{min-height:560px}
+      .designers,.beta-section{grid-template-columns:1fr}
+      .steps{grid-template-columns:repeat(2,1fr)}
+      .step{border-bottom:1px solid var(--line);padding-bottom:32px;margin-bottom:32px}
+      .step:nth-child(2){border-right:0}
+    }
+
+    @media (max-width:700px){
+      .page{width:min(calc(100% - 28px), var(--max))}
+      .topbar{gap:16px}
+      .topbar>.btn{padding:0 14px;min-height:46px;font-size:10px}
+      .brand{font-size:10px}
+      .hero{padding-top:28px;gap:28px}
+      h1{font-size:58px}
+      .hero-copy{font-size:16px}
+      .visual{min-height:480px}
+      .browser-card{left:0;width:74%}
+      .plugin-card{width:58%;min-width:0;top:150px;padding:20px}
+      .sample.one{left:10%}
+      .sample.two{left:2%}
+      .sample.three{left:30%}
+      .sample.four{left:45%}
+      .steps{grid-template-columns:1fr}
+      .step,.step:not(:first-child){padding:0 0 30px;border-right:0}
+      .format-grid{grid-template-columns:repeat(2,1fr)}
+      footer{grid-template-columns:1fr;align-items:start}
+      .footer-links{justify-content:flex-start}
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <nav class="nav"><div class="brand">Inspiration Importer</div><div class="tag">Figma plugin · Beta</div></nav>
+  <div class="page">
+    <header class="topbar">
+      <a class="brand" href="#">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>Inspiration Importer</span>
+        <span class="beta">Beta</span>
+      </a>
+
+      <nav class="nav" aria-label="Primary">
+        <a href="#how">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#beta">Beta</a>
+      </nav>
+
+      <a class="btn primary" href="Inspiration-Importer-v27.zip" download>
+        Download Plugin ↗
+      </a>
+    </header>
 
     <main>
       <section class="hero">
-        <div class="eyebrow">Website visuals → Figma</div>
-        <h1>Collect visual inspiration without the manual inspection.</h1>
-        <p class="lede">Inspiration Importer extracts useful visual assets from public websites so designers can preview, select, and bring references into Figma as a clean asset board.</p>
-        <div class="actions">
-          <a class="btn primary" href="Inspiration-Importer-v27.zip" download>Download Inspiration Importer</a>
-          <a class="btn secondary" href="#install">Get started</a>
-        </div>
-        <p class="note">Works best with public pages and direct image URLs. Some sites may block extraction.</p>
-      </section>
+        <div>
+          <div class="eyebrow">From the web to Figma</div>
+          <h1>
+            Collect what<br />
+            inspires you.
+            <span class="serif">Bring it into Figma.</span>
+          </h1>
 
-      <section>
-        <h2>Built for visual research.</h2>
-        <p class="intro">Use it for competitive audits, redesigns, moodboards, brand references, and collecting live-site inspiration.</p>
-        <div class="grid3">
-          <div class="card"><div class="num">01</div><h3>Paste a website URL</h3><p>Start with a public webpage or a direct image URL.</p></div>
-          <div class="card"><div class="num">02</div><h3>Preview useful assets</h3><p>Review images, SVGs, icons, and logos with useful and larger assets surfaced first.</p></div>
-          <div class="card"><div class="num">03</div><h3>Import into Figma</h3><p>Select what you need and bring the assets onto the canvas in a clean frame.</p></div>
-        </div>
-      </section>
+          <p class="hero-copy">
+            Inspiration Importer helps you collect images, graphics, and visual inspiration
+            from any public website and import them directly into Figma — in just a few clicks.
+          </p>
 
-      <section>
-        <h2>Key features</h2>
-        <div class="features">
-          <div class="feature">Best available image source by default</div>
-          <div class="feature">SVG, PNG, JPG, WEBP, and AVIF support</div>
-          <div class="feature">Open source and Copy URL actions</div>
-          <div class="feature">Tiny assets hidden by default</div>
-          <div class="feature">Unavailable assets remain inspectable</div>
-          <div class="feature">Friendly blocked-site messaging</div>
-        </div>
-      </section>
-
-      <section id="install">
-        <div class="install">
-          <div>
-            <h2>Get started in minutes.</h2>
-            <p class="intro">No local server or Terminal is required. The extraction backend is hosted.</p>
-            <ol class="steps">
-              <li>Download and unzip the plugin folder.</li>
-              <li>Open Figma Desktop.</li>
-              <li>Go to <strong>Plugins → Development → Import plugin from manifest…</strong></li>
-              <li>Select <strong>manifest.json</strong>.</li>
-              <li>Run <strong>Plugins → Development → Inspiration Importer</strong>.</li>
-            </ol>
-            <div class="actions" style="margin-top:24px"><a class="btn primary" href="Inspiration-Importer-v27.zip" download>Download ZIP</a></div>
+          <div class="hero-actions">
+            <a class="btn primary" href="Inspiration-Importer-v27.zip" download>Download Plugin ↗</a>
+            <a class="btn link" href="https://github.com/bonnie234/inspirationimporter" target="_blank" rel="noopener noreferrer">View on GitHub</a>
           </div>
-          <div class="limit">
-            <h3>Known limitation</h3>
-            <p>Some websites block automated extraction or protect individual image assets. If that happens, try another public page or a direct image URL. A blocked site does not necessarily mean the plugin is broken.</p>
+
+          <div class="micro">Free &nbsp;·&nbsp; Open source &nbsp;·&nbsp; For designers</div>
+        </div>
+
+        <div class="visual" aria-hidden="true">
+          <div class="browser-card"></div>
+
+          <div class="sample one"></div>
+          <div class="sample two"></div>
+          <div class="sample three"></div>
+          <div class="sample four"></div>
+
+          <div class="plugin-card">
+            <div class="plugin-title">
+              <span class="figma-dots" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span>
+              </span>
+              <span>Inspiration Importer <span class="beta">Beta</span></span>
+            </div>
+
+            <div class="plugin-list">
+              <div class="plugin-row"><span class="icon"></span><span>Paste a website URL</span></div>
+              <div class="plugin-row"><span class="icon"></span><span>Find visual assets</span></div>
+              <div class="plugin-row"><span class="icon square"></span><span>Select what you want</span></div>
+              <div class="plugin-row"><span class="icon line"></span><span>Import to Figma</span></div>
+            </div>
+          </div>
+
+          <div class="scribble">From<br />any website<br />to your canvas</div>
+        </div>
+      </section>
+
+      <section class="section" id="how">
+        <div class="section-head"><span>01</span><span>How it works</span></div>
+        <div class="steps">
+          <article class="step">
+            <div class="step-num">1</div>
+            <h3>Paste<br />a website</h3>
+            <p>Enter any public URL you want to explore.</p>
+          </article>
+          <article class="step">
+            <div class="step-num">2</div>
+            <h3>Scan<br />the page</h3>
+            <p>We'll find the images, graphics, and visual assets for you.</p>
+          </article>
+          <article class="step">
+            <div class="step-num">3</div>
+            <h3>Select<br />what matters</h3>
+            <p>Choose the assets that inspire you.</p>
+          </article>
+          <article class="step">
+            <div class="step-num">4</div>
+            <h3>Import<br />to Figma</h3>
+            <p>Add them directly to your canvas — ready to use.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="features">
+        <div class="section-head"><span>02</span><span>Built for designers</span></div>
+
+        <div class="designers">
+          <div>
+            <h2 class="big-copy">More inspiration.<br />Less friction.</h2>
+            <p class="benefit-copy">
+              No downloading files one by one.<br />
+              No hunting through source code.<br />
+              No leaving your design workflow.
+            </p>
+          </div>
+
+          <div>
+            <div class="format-grid" aria-label="Supported image formats">
+              <div><div class="format-card"></div><div class="format-label">SVG</div></div>
+              <div><div class="format-card"></div><div class="format-label">PNG</div></div>
+              <div><div class="format-card"></div><div class="format-label">JPG</div></div>
+              <div><div class="format-card"></div><div class="format-label">WEBP</div></div>
+              <div><div class="format-card"></div><div class="format-label">AVIF</div></div>
+            </div>
+          </div>
+
+          <div class="use-list">
+            <span>Websites</span>
+            <span>Mood boards</span>
+            <span>Competitor research</span>
+            <span>Visual exploration</span>
+            <span>Creative inspiration</span>
+            <span>All in Figma</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="beta">
+        <div class="section-head"><span>03</span><span>Beta</span></div>
+
+        <div class="beta-section">
+          <div>
+            <h2 class="big-copy">A more open<br />creative process.</h2>
+          </div>
+
+          <div class="beta-copy">
+            Inspiration Importer is currently in beta. Some websites may restrict asset extraction.
+            When they do, the plugin will let you know rather than fail silently.
+          </div>
+
+          <div>
+            <a class="btn primary" href="Inspiration-Importer-v27.zip" download>Download Plugin ↗</a>
+            <div class="micro">Free &nbsp;·&nbsp; Open source &nbsp;·&nbsp; For designers</div>
           </div>
         </div>
       </section>
     </main>
 
-    <footer class="footer">
-      <span>Inspiration Importer · Stable beta</span>
-      <span>Always respect the rights and licenses of third-party assets.</span>
+    <footer>
+      <a class="brand" href="#">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>Inspiration Importer</span>
+      </a>
+
+      <div>Made for designers.</div>
+
+      <div class="footer-links">
+        <a href="https://github.com/bonnie234/inspirationimporter" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="#beta">Beta</a>
+        <span>© 2026</span>
+      </div>
     </footer>
   </div>
 </body>
