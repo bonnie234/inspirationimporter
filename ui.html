@@ -851,21 +851,120 @@
     return assetArea(b) - assetArea(a);
   }
 
+  function normalizedAssetIdentity(asset) {
+    var candidates = [
+      asset.originalSrc,
+      asset.remoteSrc,
+      asset.sourceUrl,
+      asset.src
+    ].filter(Boolean).map(String);
+
+    function repeatedlyDecode(value) {
+      var out = value;
+      for (var i = 0; i < 3; i += 1) {
+        try {
+          var next = decodeURIComponent(out);
+          if (next === out) break;
+          out = next;
+        } catch (_error) { break; }
+      }
+      return out;
+    }
+
+    function clean(value) {
+      var decoded = repeatedlyDecode(value);
+
+      // CDN/proxy URLs often contain the real source URL as their final segment.
+      // Prefer the last embedded http(s) URL because it is usually the original asset.
+      var embedded = decoded.match(/https?:\/\/[^\s"'<>]+/gi);
+      if (embedded && embedded.length > 1) decoded = embedded[embedded.length - 1];
+
+      try {
+        var parsed = new URL(decoded);
+        // Remove query params that describe responsive size/crop/quality rather than identity.
+        [
+          'w','width','h','height','size','resize','fit','crop','quality','q',
+          'dpr','device-pixel-ratio','auto','format','fm'
+        ].forEach(function(key) { parsed.searchParams.delete(key); });
+        decoded = parsed.origin + parsed.pathname;
+      } catch (_error) {
+        decoded = decoded.replace(/[?#].*$/, '');
+      }
+
+      return decoded
+        .replace(/(?:^|[\/_-])(?:w|width|h|height)[_-]?\d+(?=[\/_.-]|$)/gi, '')
+        .replace(/(?:^|[\/_-])\d{2,5}x\d{2,5}(?=[\/_.-]|$)/gi, '')
+        .replace(/smartcrop[_-]?w\d+[_-]?h\d+(?:;?format[_-]?[a-z0-9]+)?/gi, '')
+        .replace(/(?:^|[\/_-])(?:resize|crop|fit)[_-]?\d+(?:x\d+)?(?=[\/_.-]|$)/gi, '')
+        .replace(/[_-](?:w|h)\d{2,5}(?=[_.-])/gi, '')
+        .replace(/[_-]\d{2,5}x\d{2,5}(?=\.[a-z0-9]+$)/gi, '')
+        .replace(/\/+/g, '/')
+        .replace(/\/$/, '')
+        .toLowerCase();
+    }
+
+    var identities = candidates.map(clean).filter(Boolean);
+
+    // Prefer an identity ending in an actual image filename. This catches URLs like
+    // Yahoo/lightyear smartcrop/.../https://cdn.example.com/photo.jpg.
+    var imageIdentity = identities.find(function(value) {
+      return /\.(?:svg|png|jpe?g|webp|avif)$/i.test(value);
+    });
+
+    return imageIdentity || identities[0] || asset.id || '';
+  }
+
+  function bestQualityAssets(assets) {
+    var bestByIdentity = new Map();
+    var order = [];
+
+    assets.forEach(function(asset) {
+      var key = normalizedAssetIdentity(asset);
+
+      // If extraction supplied a stable family/candidate identifier, use it.
+      var family = asset.srcsetGroup || asset.imageGroup || asset.family || asset.originalSrc || '';
+      if (family) {
+        var familyKey = normalizedAssetIdentity({
+          originalSrc: family,
+          remoteSrc: family,
+          sourceUrl: family,
+          src: family,
+          id: asset.id
+        });
+        if (familyKey) key = familyKey;
+      }
+
+      if (!key) key = asset.id || createId();
+
+      if (!bestByIdentity.has(key)) {
+        bestByIdentity.set(key, asset);
+        order.push(key);
+        return;
+      }
+
+      var current = bestByIdentity.get(key);
+      var currentArea = assetArea(current);
+      var candidateArea = assetArea(asset);
+
+      var candidateIsBetter =
+        candidateArea > currentArea ||
+        (candidateArea === currentArea &&
+          Number(asset.fileSize || 0) > Number(current.fileSize || 0));
+
+      if (candidateIsBetter) bestByIdentity.set(key, asset);
+    });
+
+    return order.map(function(key) { return bestByIdentity.get(key); });
+  }
+
   function currentAssets() {
-    return visibleAssets().slice().sort(sortUsefulAssets);
+    return bestQualityAssets(visibleAssets()).slice().sort(sortUsefulAssets);
   }
 
   function updateResultsSummary(assets) {
-    var shown = assets.length;
-    var total = state.assets.length;
-    var hiddenTiny = state.hideTiny ? state.assets.filter(isTinyAsset).length : 0;
-    var unavailable = state.assets.filter(function(asset) { return !!asset.previewFailed; }).length;
-    var ready = Math.max(0, total - unavailable);
-    var pieces = [shown + ' shown', total + ' found'];
-    if (ready) pieces.push(ready + ' ready');
-
-    if (hiddenTiny) pieces.push(hiddenTiny + ' tiny hidden');
-    els.count.textContent = total ? pieces.join(' · ') : '0 found';
+    var readyAssets = assets.filter(function(asset) { return !asset.previewFailed; });
+    var ready = readyAssets.length;
+    els.count.textContent = ready ? ready + ' asset' + (ready === 1 ? '' : 's') : '0 assets';
   }
 
   function formatBytes(bytes) {
@@ -1114,7 +1213,7 @@
       state.assets = Array.isArray(payload.assets) ? payload.assets : [];
       state.selectedIds.clear();
       setBusy(false);
-      setStatus(state.assets.length ? `Found ${state.assets.length} assets. Useful and larger assets are shown first.` : 'No supported images were found on that page.', state.assets.length ? 'success' : 'default');
+      setStatus(state.assets.length ? `Found ${currentAssets().length} unique assets. Highest-quality versions are shown when multiple sizes are available.` : 'No supported images were found on that page.', state.assets.length ? 'success' : 'default');
       renderGrid();
     } catch (error) {
       setBusy(false);
@@ -1372,7 +1471,7 @@
       setBusy(false);
       state.assets = message.assets || [];
       state.selectedIds.clear();
-      setStatus(state.assets.length ? `Found ${state.assets.length} assets. Useful and larger assets are shown first.` : 'No supported images were found on that page.', state.assets.length ? 'success' : 'default');
+      setStatus(state.assets.length ? `Found ${currentAssets().length} unique assets. Highest-quality versions are shown when multiple sizes are available.` : 'No supported images were found on that page.', state.assets.length ? 'success' : 'default');
       renderGrid();
       return;
     }
