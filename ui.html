@@ -1014,6 +1014,26 @@
     }
   }
 
+  function updatePreviewCheckStatus() {
+    var candidates = bestQualityAssets(state.assets).filter(function(asset) {
+      return !state.hideTiny || !isTinyAsset(asset);
+    });
+
+    if (!candidates.length) return;
+
+    var unchecked = candidates.filter(function(asset) {
+      return !asset.previewChecked && !asset.previewFailed;
+    }).length;
+
+    if (unchecked > 0) {
+      setStatus('Checking ' + candidates.length + ' assets…', 'busy');
+      return;
+    }
+
+    var ready = candidates.filter(function(asset) { return !asset.previewFailed; }).length;
+    setStatus(ready + ' asset' + (ready === 1 ? '' : 's') + ' ready to import.', ready ? 'success' : 'default');
+  }
+
   function renderGrid() {
     const assets = currentAssets();
     updateResultsSummary(assets);
@@ -1033,16 +1053,24 @@
       const thumbWrap = document.createElement('div');
       thumbWrap.className = 'thumb-wrap';
       const img = document.createElement('img');
-      img.loading = 'lazy';
+      img.loading = 'eager';
       img.alt = asset.alt || asset.format || 'Extracted website asset';
       img.referrerPolicy = 'no-referrer';
       img.src = asset.thumbnail || asset.src;
-      img.addEventListener('load', () => updateAssetDimensions(asset.id, img));
+      img.addEventListener('load', () => {
+        asset.previewChecked = true;
+        updateAssetDimensions(asset.id, img);
+        updateResultsSummary(currentAssets());
+        updatePreviewCheckStatus();
+      });
       img.addEventListener('error', () => {
         asset.previewFailed = true;
+        asset.previewChecked = true;
         img.remove();
         if (state.hideUnavailable) {
-          renderGrid();
+          card.remove();
+          updateResultsSummary(currentAssets());
+          updatePreviewCheckStatus();
           return;
         }
         var fallback = document.createElement('div');
@@ -1051,6 +1079,7 @@
         fallback.innerHTML = '<strong>' + (asset.format || 'asset').toUpperCase() + '</strong><span>Preview unavailable</span>';
         thumbWrap.appendChild(fallback);
         updateResultsSummary(currentAssets());
+        updatePreviewCheckStatus();
       });
       thumbWrap.appendChild(img);
 
@@ -1213,7 +1242,7 @@
       state.assets = Array.isArray(payload.assets) ? payload.assets : [];
       state.selectedIds.clear();
       setBusy(false);
-      setStatus(state.assets.length ? `Found ${currentAssets().length} unique assets. Highest-quality versions are shown when multiple sizes are available.` : 'No supported images were found on that page.', state.assets.length ? 'success' : 'default');
+      setStatus(state.assets.length ? `Checking ${currentAssets().length} assets…` : 'No supported images were found on that page.', state.assets.length ? 'busy' : 'default');
       renderGrid();
     } catch (error) {
       setBusy(false);
@@ -1471,7 +1500,7 @@
       setBusy(false);
       state.assets = message.assets || [];
       state.selectedIds.clear();
-      setStatus(state.assets.length ? `Found ${currentAssets().length} unique assets. Highest-quality versions are shown when multiple sizes are available.` : 'No supported images were found on that page.', state.assets.length ? 'success' : 'default');
+      setStatus(state.assets.length ? `Checking ${currentAssets().length} assets…` : 'No supported images were found on that page.', state.assets.length ? 'busy' : 'default');
       renderGrid();
       return;
     }
