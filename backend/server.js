@@ -163,13 +163,16 @@ async function extractAssets(html, pageUrl, quality, req) {
     Object.keys(attribs).forEach((name) => {
       const value = attribs[name];
       if (!value) return;
-      if (/srcset/i.test(name)) {
-        splitSrcsetCandidates(value).forEach((src) => pushRemote(rawAssets, src, pageUrl, { alt: 'Responsive image', pageUrl }));
-        return;
-      }
-      if (/(src|href|poster|content|image|img|thumbnail|background|logo|url)$/i.test(name) || /^data-/i.test(name)) {
-        extractPossibleImageUrls(value).forEach((src) => pushRemote(rawAssets, src, pageUrl, { alt: name, pageUrl }));
-      }
+if (/srcset/i.test(name)) {
+  const src = chooseSourceCandidate(value, quality);
+  if (src) {
+    pushRemote(rawAssets, src, pageUrl, {
+      alt: 'Responsive image',
+      pageUrl
+    });
+  }
+  return;
+}
     });
   });
 
