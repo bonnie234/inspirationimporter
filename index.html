@@ -103,10 +103,10 @@
 
     .hero{
       display:grid;
-      grid-template-columns:minmax(0, 1.02fr) minmax(460px, .98fr);
-      gap:64px;
+      grid-template-columns:1fr;
+      gap:0;
       align-items:center;
-      min-height:710px;
+      min-height:auto;
       padding:48px 0 60px;
     }
 
@@ -168,108 +168,6 @@
       color:var(--muted);
     }
 
-    .visual{
-      position:relative;
-      min-height:590px;
-    }
-
-    .browser-card{
-      position:absolute;
-      top:32px;
-      left:30px;
-      width:64%;
-      aspect-ratio:1.38;
-      background:linear-gradient(135deg,#d9dee2,#b7c5cc 45%,#a9947f 46%,#ddd3c5);
-      border:1px solid rgba(17,17,17,.14);
-      box-shadow:0 20px 50px rgba(0,0,0,.06);
-      overflow:hidden;
-    }
-
-    .browser-card::before{
-      content:"● ● ●";
-      position:absolute;
-      top:10px;
-      left:12px;
-      font-size:8px;
-      letter-spacing:3px;
-      z-index:3;
-    }
-
-    .browser-card::after{
-      content:"";
-      position:absolute;
-      inset:30px 18px 18px;
-      background:
-        linear-gradient(110deg,rgba(255,255,255,.8),rgba(255,255,255,.1) 40%),
-        linear-gradient(35deg,#9b8a77 0 30%,#d9d9d9 31% 55%,#6f777a 56% 100%);
-    }
-
-    .plugin-card{
-      position:absolute;
-      right:0;
-      top:160px;
-      width:46%;
-      min-width:300px;
-      padding:28px;
-      background:rgba(247,243,236,.96);
-      border:1px solid rgba(17,17,17,.12);
-      box-shadow:0 18px 45px rgba(0,0,0,.06);
-      z-index:4;
-    }
-
-    .plugin-title{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      font-size:18px;
-      margin-bottom:34px;
-    }
-
-    .figma-dots{
-      width:24px;height:34px;position:relative;display:inline-block;
-    }
-    .figma-dots span{position:absolute;width:11px;height:11px;border-radius:50%;background:#111}
-    .figma-dots span:nth-child(1){left:0;top:0}
-    .figma-dots span:nth-child(2){left:11px;top:0}
-    .figma-dots span:nth-child(3){left:0;top:11px}
-    .figma-dots span:nth-child(4){left:11px;top:11px}
-    .figma-dots span:nth-child(5){left:0;top:22px}
-
-    .plugin-list{
-      display:grid;
-      gap:24px;
-      font-size:14px;
-    }
-    .plugin-row{display:grid;grid-template-columns:22px 1fr;gap:14px;align-items:center}
-    .icon{
-      width:16px;height:16px;border:1.5px solid currentColor;border-radius:50%;
-    }
-    .icon.square{border-radius:2px}
-    .icon.line{border:0;border-bottom:1.5px solid currentColor;border-radius:0}
-
-    .sample{
-      position:absolute;
-      background:#d2cec6;
-      border:1px solid rgba(17,17,17,.08);
-      box-shadow:0 10px 30px rgba(0,0,0,.05);
-      z-index:2;
-    }
-    .sample.one{width:118px;height:170px;left:22%;top:285px;background:linear-gradient(160deg,#263329,#596450)}
-    .sample.two{width:100px;height:120px;left:10%;top:410px;background:linear-gradient(135deg,#c6b49e,#7b6657)}
-    .sample.three{width:112px;height:148px;left:35%;top:435px;background:linear-gradient(160deg,#0e1a1d,#42535a)}
-    .sample.four{width:120px;height:100px;left:48%;top:505px;background:linear-gradient(150deg,#e7e0d5,#c7beb2)}
-
-    .scribble{
-      position:absolute;
-      left:0;
-      bottom:34px;
-      font-family:Georgia, "Times New Roman", serif;
-      font-style:italic;
-      font-size:22px;
-      line-height:1.1;
-      transform:rotate(-5deg);
-    }
-
     .section{
       padding:22px 0 62px;
       border-top:1px solid var(--line);
@@ -321,13 +219,6 @@
       color:#28241f;
     }
 
-    .designers{
-      display:grid;
-      grid-template-columns:.8fr 1.35fr .55fr;
-      gap:48px;
-      align-items:start;
-    }
-
     .big-copy{
       margin:0 0 18px;
       font-size:52px;
@@ -341,54 +232,71 @@
       color:#28241f;
     }
 
-    .format-grid{
+    .serif-inline{
+      font-family:Georgia, "Times New Roman", serif;
+      font-style:italic;
+      font-weight:400;
+    }
+
+
+    .serif-inline{
+      font-family:Georgia, "Times New Roman", serif;
+      font-style:italic;
+      font-weight:400;
+    }
+
+    .why-clean,
+    .beta-clean{
       display:grid;
-      grid-template-columns:repeat(5,1fr);
-      gap:14px;
+      grid-template-columns:minmax(0,.9fr) minmax(360px,1.1fr);
+      gap:96px;
+      align-items:start;
+      padding:10px 0 18px;
     }
-    .format-card{
-      aspect-ratio:.72;
-      border-radius:8px;
-      overflow:hidden;
-      background:#d8d1c7;
-      border:1px solid rgba(17,17,17,.08);
+
+    .why-copy,
+
+    .why-copy > p,
+    .beta-copy > p{
+      margin:0;
     }
-    .format-card:nth-child(1){background:linear-gradient(160deg,#24382b,#5a6a57)}
-    .format-card:nth-child(2){background:linear-gradient(140deg,#eee8df,#cfc4b5)}
-    .format-card:nth-child(3){background:linear-gradient(155deg,#112027,#4f626c)}
-    .format-card:nth-child(4){background:linear-gradient(160deg,#dad3c8,#9c7c63)}
-    .format-card:nth-child(5){background:linear-gradient(145deg,#ede7dd,#c8bdaf)}
-    .format-label{
-      margin-top:10px;
+
+    .why-meta{
+      display:grid;
+      gap:26px;
+      margin-top:42px;
+      padding-top:18px;
+      border-top:1px solid var(--line);
+    }
+
+    .why-meta > div{
+      display:grid;
+      grid-template-columns:120px 1fr;
+      gap:24px;
+      align-items:start;
+    }
+
+    .why-label{
       font-size:10px;
       letter-spacing:.16em;
       text-transform:uppercase;
-      text-align:center;
+      color:var(--muted);
     }
 
-    .use-list{
-      display:grid;
-      gap:12px;
-      font-size:11px;
-      letter-spacing:.12em;
-      text-transform:uppercase;
-    }
-    .use-list span{
-      display:block;
-      padding-bottom:8px;
-      border-bottom:1px solid var(--line);
-    }
-
-    .beta-section{
-      display:grid;
-      grid-template-columns:.8fr 1.1fr .8fr;
-      gap:48px;
-      align-items:start;
-    }
-    .beta-copy{
-      font-size:15px;
+    .why-meta p{
+      margin:0;
+      font-size:14px;
       line-height:1.5;
-      color:#29251f;
+    }
+
+    .release-note{
+      margin-top:34px;
+      padding-top:16px;
+      border-top:1px solid var(--line);
+      font-size:10px;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      color:var(--muted);
     }
 
     footer{
@@ -411,11 +319,11 @@
     }
 
     @media (max-width:1100px){
+      .why-clean,.beta-clean{grid-template-columns:1fr;gap:36px}
       .topbar{grid-template-columns:1fr auto}
       .nav{display:none}
       .hero{grid-template-columns:1fr;min-height:auto}
-      .visual{min-height:560px}
-      .designers,.beta-section{grid-template-columns:1fr}
+      .why-clean,.beta-clean{grid-template-columns:1fr;gap:36px}
       .steps{grid-template-columns:repeat(2,1fr)}
       .step{border-bottom:1px solid var(--line);padding-bottom:32px;margin-bottom:32px}
       .step:nth-child(2){border-right:0}
@@ -429,16 +337,8 @@
       .hero{padding-top:28px;gap:28px}
       h1{font-size:58px}
       .hero-copy{font-size:16px}
-      .visual{min-height:480px}
-      .browser-card{left:0;width:74%}
-      .plugin-card{width:58%;min-width:0;top:150px;padding:20px}
-      .sample.one{left:10%}
-      .sample.two{left:2%}
-      .sample.three{left:30%}
-      .sample.four{left:45%}
       .steps{grid-template-columns:1fr}
       .step,.step:not(:first-child){padding:0 0 30px;border-right:0}
-      .format-grid{grid-template-columns:repeat(2,1fr)}
       footer{grid-template-columns:1fr;align-items:start}
       .footer-links{justify-content:flex-start}
     }
@@ -455,7 +355,7 @@
 
       <nav class="nav" aria-label="Primary">
         <a href="#how">How it works</a>
-        <a href="#features">Features</a>
+        <a href="#why">Why it helps</a>
         <a href="#beta">Beta</a>
       </nav>
 
@@ -475,8 +375,8 @@
           </h1>
 
           <p class="hero-copy">
-            Inspiration Importer helps you collect images, graphics, and visual inspiration
-            from any public website and import them directly into Figma — in just a few clicks.
+            Collect visual references from public websites, choose what matters,
+            and bring selected assets directly into Figma.
           </p>
 
           <div class="hero-actions">
@@ -484,34 +384,7 @@
             <a class="btn link" href="https://github.com/bonnie234/inspirationimporter" target="_blank" rel="noopener noreferrer">View on GitHub</a>
           </div>
 
-          <div class="micro">Free &nbsp;·&nbsp; Open source &nbsp;·&nbsp; For designers</div>
-        </div>
-
-        <div class="visual" aria-hidden="true">
-          <div class="browser-card"></div>
-
-          <div class="sample one"></div>
-          <div class="sample two"></div>
-          <div class="sample three"></div>
-          <div class="sample four"></div>
-
-          <div class="plugin-card">
-            <div class="plugin-title">
-              <span class="figma-dots" aria-hidden="true">
-                <span></span><span></span><span></span><span></span><span></span>
-              </span>
-              <span>Inspiration Importer <span class="beta">Beta</span></span>
-            </div>
-
-            <div class="plugin-list">
-              <div class="plugin-row"><span class="icon"></span><span>Paste a website URL</span></div>
-              <div class="plugin-row"><span class="icon"></span><span>Find visual assets</span></div>
-              <div class="plugin-row"><span class="icon square"></span><span>Select what you want</span></div>
-              <div class="plugin-row"><span class="icon line"></span><span>Import to Figma</span></div>
-            </div>
-          </div>
-
-          <div class="scribble">From<br />any website<br />to your canvas</div>
+          <div class="micro">Free &nbsp;·&nbsp; Beta &nbsp;·&nbsp; For designers</div>
         </div>
       </section>
 
@@ -521,56 +394,50 @@
           <article class="step">
             <div class="step-num">1</div>
             <h3>Paste<br />a website</h3>
-            <p>Enter any public URL you want to explore.</p>
+            <p>Paste a public website or direct image URL.</p>
           </article>
           <article class="step">
             <div class="step-num">2</div>
             <h3>Scan<br />the page</h3>
-            <p>We'll find the images, graphics, and visual assets for you.</p>
+            <p>Scan the page for visual assets.</p>
           </article>
           <article class="step">
             <div class="step-num">3</div>
             <h3>Select<br />what matters</h3>
-            <p>Choose the assets that inspire you.</p>
+            <p>Select the references you want to keep.</p>
           </article>
           <article class="step">
             <div class="step-num">4</div>
             <h3>Import<br />to Figma</h3>
-            <p>Add them directly to your canvas — ready to use.</p>
+            <p>Import them directly to your Figma canvas.</p>
           </article>
         </div>
       </section>
 
-      <section class="section" id="features">
-        <div class="section-head"><span>02</span><span>Built for designers</span></div>
+      <section class="section" id="why">
+        <div class="section-head"><span>02</span><span>Why it helps</span></div>
 
-        <div class="designers">
+        <div class="why-clean">
           <div>
-            <h2 class="big-copy">More inspiration.<br />Less friction.</h2>
-            <p class="benefit-copy">
-              No downloading files one by one.<br />
-              No hunting through source code.<br />
-              No leaving your design workflow.
+            <h2 class="big-copy">More inspiration.<br /><span class="serif-inline">Less friction.</span></h2>
+          </div>
+
+          <div class="why-copy">
+            <p>
+              Skip the download-and-upload loop. Collect visual references while you browse
+              and bring the ones worth keeping directly into your Figma canvas.
             </p>
-          </div>
 
-          <div>
-            <div class="format-grid" aria-label="Supported image formats">
-              <div><div class="format-card"></div><div class="format-label">SVG</div></div>
-              <div><div class="format-card"></div><div class="format-label">PNG</div></div>
-              <div><div class="format-card"></div><div class="format-label">JPG</div></div>
-              <div><div class="format-card"></div><div class="format-label">WEBP</div></div>
-              <div><div class="format-card"></div><div class="format-label">AVIF</div></div>
+            <div class="why-meta">
+              <div>
+                <span class="why-label">Use it for</span>
+                <p>Mood boards · Competitor research · Visual exploration · Creative inspiration</p>
+              </div>
+              <div>
+                <span class="why-label">Supports</span>
+                <p>SVG / PNG / JPG / WEBP / AVIF</p>
+              </div>
             </div>
-          </div>
-
-          <div class="use-list">
-            <span>Websites</span>
-            <span>Mood boards</span>
-            <span>Competitor research</span>
-            <span>Visual exploration</span>
-            <span>Creative inspiration</span>
-            <span>All in Figma</span>
           </div>
         </div>
       </section>
@@ -578,19 +445,17 @@
       <section class="section" id="beta">
         <div class="section-head"><span>03</span><span>Beta</span></div>
 
-        <div class="beta-section">
+        <div class="beta-clean">
           <div>
-            <h2 class="big-copy">A more open<br />creative process.</h2>
+            <h2 class="big-copy">Built to<br /><span class="serif-inline">get better.</span></h2>
           </div>
 
           <div class="beta-copy">
-            Inspiration Importer is currently in beta. Some websites may restrict asset extraction.
-            When they do, the plugin will let you know rather than fail silently.
-          </div>
-
-          <div>
-            <a class="btn primary" href="Inspiration-Importer-v27.zip" download>Download Plugin ↗</a>
-            <div class="micro">Free &nbsp;·&nbsp; Open source &nbsp;·&nbsp; For designers</div>
+            <p>
+              Inspiration Importer is launching in beta. Some websites restrict access to their assets,
+              so extraction may vary by site. Compatibility and the overall experience will continue to improve.
+            </p>
+            <div class="release-note">V0.27 · BETA · SEPTEMBER 2026</div>
           </div>
         </div>
       </section>
