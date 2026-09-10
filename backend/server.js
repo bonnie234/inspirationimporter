@@ -1,4 +1,4 @@
-/* Site Asset Importer scraper backend
+/* Inspiration Importer scraper backend
    Run with: npm install && npm run dev
    Then keep http://localhost:8787 running while testing the Figma plugin.
 */
@@ -129,60 +129,10 @@ async function extractAssets(html, pageUrl, quality, req) {
     pushRemote(rawAssets, src, pageUrl, { alt: 'Picture source' });
   });
 
-    const externalSvgUses = [];
-
   $('svg').each((index, el) => {
-    const node = $(el);
-    const useNode = node.find('use').first();
-    const useHref = useNode.attr('href') || useNode.attr('xlink:href');
-
-    // Resolve SVGs that reference a local <symbol>.
-    if (useHref && useHref.startsWith('#')) {
-      const symbolId = useHref.slice(1);
-
-      const symbol = $('symbol').filter((_i, symbolEl) => {
-        return $(symbolEl).attr('id') === symbolId;
-      }).first();
-
-      if (symbol.length) {
-        const standalone = buildSvgFromSymbol(node, symbol, $);
-        const optimized = optimizeSvg(standalone);
-
-        if (optimized) {
-          rawAssets.push({
-            idSeed: pageUrl + '#symbol-' + symbolId,
-            src: svgToDataUri(optimized),
-            originalSrc: pageUrl + '#symbol-' + symbolId,
-            sourceUrl: pageUrl + '#symbol-' + symbolId,
-            alt: symbolId || 'SVG icon',
-            width: extractSvgDimension(optimized, 'width'),
-            height: extractSvgDimension(optimized, 'height'),
-            format: 'svg',
-            fileSize: Buffer.byteLength(optimized),
-            inlineSvg: optimized
-          });
-
-          return;
-        }
-      }
-    }
-
-    // Save external sprite references so we can resolve them asynchronously.
-    if (useHref && !useHref.startsWith('#')) {
-      externalSvgUses.push({
-        href: useHref,
-        index,
-        outerSvg: $.html(el)
-      });
-
-      return;
-    }
-
-    // Existing behavior for normal self-contained inline SVGs.
     const raw = $.html(el);
     const optimized = optimizeSvg(raw);
     if (!optimized) return;
-
     rawAssets.push({
       idSeed: pageUrl + '#inline-svg-' + (index + 1),
       src: svgToDataUri(optimized),
@@ -197,39 +147,6 @@ async function extractAssets(html, pageUrl, quality, req) {
     });
   });
 
-  // Resolve external SVG sprite references such as:
-  // /icons/sprite.svg#arrow-right
-  const spriteCache = new Map();
-
-  for (const item of externalSvgUses.slice(0, 50)) {
-    try {
-      const resolved = await resolveExternalSvgUse(
-        item.href,
-        pageUrl,
-        spriteCache
-      );
-
-      if (!resolved) continue;
-
-      const optimized = optimizeSvg(resolved.svg);
-      if (!optimized) continue;
-
-      rawAssets.push({
-        idSeed: resolved.sourceUrl,
-        src: svgToDataUri(optimized),
-        originalSrc: resolved.sourceUrl,
-        sourceUrl: resolved.sourceUrl,
-        alt: resolved.symbolId || 'SVG icon',
-        width: extractSvgDimension(optimized, 'width'),
-        height: extractSvgDimension(optimized, 'height'),
-        format: 'svg',
-        fileSize: Buffer.byteLength(optimized),
-        inlineSvg: optimized
-      });
-    } catch (_error) {
-      // External SVG sprite extraction is best-effort.
-    }
-  }
   $('link[rel*="icon"], link[rel="apple-touch-icon"], meta[property="og:image"], meta[name="twitter:image"], meta[itemprop="image"], a[href], video[poster]').each((_i, el) => {
     const node = $(el);
     const src = node.attr('href') || node.attr('content') || node.attr('poster');
@@ -241,40 +158,21 @@ async function extractAssets(html, pageUrl, quality, req) {
     extractCssUrls($(el).attr('style') || '').forEach((src) => pushRemote(rawAssets, src, pageUrl, { alt: 'CSS background image', pageUrl }));
   });
 
-   $('*').each((_i, el) => {
+  $('*').each((_i, el) => {
     const attribs = el.attribs || {};
-
     Object.keys(attribs).forEach((name) => {
       const value = attribs[name];
       if (!value) return;
-
-      // Keep the Shopbop fix:
-      // choose ONE responsive image instead of importing every srcset size.
-      if (/srcset/i.test(name)) {
-        const src = chooseSourceCandidate(value, quality);
-
-        if (src) {
-          pushRemote(rawAssets, src, pageUrl, {
-            alt: 'Responsive image',
-            pageUrl
-          });
-        }
-
-        return;
-      }
-
-      // Restore general asset discovery.
-      if (
-        /(src|href|poster|content|image|img|thumbnail|background|logo|url)$/i.test(name) ||
-        /^data-/i.test(name)
-      ) {
-        extractPossibleImageUrls(value).forEach((src) =>
-          pushRemote(rawAssets, src, pageUrl, {
-            alt: 'Embedded asset',
-            pageUrl
-          })
-        );
-      }
+if (/srcset/i.test(name)) {
+  const src = chooseSourceCandidate(value, quality);
+  if (src) {
+    pushRemote(rawAssets, src, pageUrl, {
+      alt: 'Responsive image',
+      pageUrl
+    });
+  }
+  return;
+}
     });
   });
 
@@ -498,119 +396,6 @@ function optimizeSvg(svg) {
     .replace(/\s{2,}/g, ' ')
     .replace(/>\s+</g, '><')
     .trim();
-}
-
-function buildSvgFromSymbol(outerSvg, symbol, $) {
-  const outerViewBox = outerSvg.attr('viewBox');
-  const symbolViewBox = symbol.attr('viewBox');
-
-  const viewBox = outerViewBox || symbolViewBox || '';
-
-  const width =
-    outerSvg.attr('width') ||
-    symbol.attr('width') ||
-    '';
-
-  const height =
-    outerSvg.attr('height') ||
-    symbol.attr('height') ||
-    '';
-
-  const contents = symbol.html() || '';
-
-  let attrs = ' xmlns="http://www.w3.org/2000/svg"';
-
-  if (viewBox) {
-    attrs += ' viewBox="' + escapeXmlAttribute(viewBox) + '"';
-  }
-
-  if (width) {
-    attrs += ' width="' + escapeXmlAttribute(width) + '"';
-  }
-
-  if (height) {
-    attrs += ' height="' + escapeXmlAttribute(height) + '"';
-  }
-
-  return '<svg' + attrs + '>' + contents + '</svg>';
-}
-
-async function resolveExternalSvgUse(href, pageUrl, cache) {
-  const value = String(href || '').trim();
-  if (!value) return null;
-
-  const hashIndex = value.indexOf('#');
-  if (hashIndex === -1) return null;
-
-  const spritePart = value.slice(0, hashIndex);
-  const symbolId = value.slice(hashIndex + 1);
-
-  if (!spritePart || !symbolId) return null;
-
-  const spriteUrl = toAbsoluteUrl(spritePart, pageUrl);
-  if (!spriteUrl) return null;
-
-  let spriteText = cache.get(spriteUrl);
-
-  if (!spriteText) {
-    const response = await fetchWithTimeout(spriteUrl, {
-      headers: {
-        'user-agent': browserUserAgent(),
-        'accept': 'image/svg+xml,text/xml,application/xml,*/*;q=0.8',
-        'accept-language': 'en-US,en;q=0.9',
-        'referer': pageUrl
-      }
-    });
-
-    if (!response.ok) return null;
-
-    spriteText = await readLimitedText(response, 1024 * 1024);
-    cache.set(spriteUrl, spriteText);
-  }
-
-  const sprite$ = cheerio.load(spriteText, {
-    xmlMode: true,
-    decodeEntities: false
-  });
-
-  const symbol = sprite$('symbol').filter((_i, el) => {
-    return sprite$(el).attr('id') === symbolId;
-  }).first();
-
-  if (!symbol.length) return null;
-
-  const viewBox = symbol.attr('viewBox') || '';
-  const width = symbol.attr('width') || '';
-  const height = symbol.attr('height') || '';
-  const contents = symbol.html() || '';
-
-  let attrs = ' xmlns="http://www.w3.org/2000/svg"';
-
-  if (viewBox) {
-    attrs += ' viewBox="' + escapeXmlAttribute(viewBox) + '"';
-  }
-
-  if (width) {
-    attrs += ' width="' + escapeXmlAttribute(width) + '"';
-  }
-
-  if (height) {
-    attrs += ' height="' + escapeXmlAttribute(height) + '"';
-  }
-
-  return {
-    symbolId,
-    sourceUrl: spriteUrl + '#' + symbolId,
-    svg: '<svg' + attrs + '>' + contents + '</svg>'
-  };
-}
-
-function escapeXmlAttribute(value) {
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
 }
 
 function svgToDataUri(svg) {
