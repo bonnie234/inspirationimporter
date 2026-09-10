@@ -241,21 +241,40 @@ async function extractAssets(html, pageUrl, quality, req) {
     extractCssUrls($(el).attr('style') || '').forEach((src) => pushRemote(rawAssets, src, pageUrl, { alt: 'CSS background image', pageUrl }));
   });
 
-  $('*').each((_i, el) => {
+   $('*').each((_i, el) => {
     const attribs = el.attribs || {};
+
     Object.keys(attribs).forEach((name) => {
       const value = attribs[name];
       if (!value) return;
-if (/srcset/i.test(name)) {
-  const src = chooseSourceCandidate(value, quality);
-  if (src) {
-    pushRemote(rawAssets, src, pageUrl, {
-      alt: 'Responsive image',
-      pageUrl
-    });
-  }
-  return;
-}
+
+      // Keep the Shopbop fix:
+      // choose ONE responsive image instead of importing every srcset size.
+      if (/srcset/i.test(name)) {
+        const src = chooseSourceCandidate(value, quality);
+
+        if (src) {
+          pushRemote(rawAssets, src, pageUrl, {
+            alt: 'Responsive image',
+            pageUrl
+          });
+        }
+
+        return;
+      }
+
+      // Restore general asset discovery.
+      if (
+        /(src|href|poster|content|image|img|thumbnail|background|logo|url)$/i.test(name) ||
+        /^data-/i.test(name)
+      ) {
+        extractPossibleImageUrls(value).forEach((src) =>
+          pushRemote(rawAssets, src, pageUrl, {
+            alt: 'Embedded asset',
+            pageUrl
+          })
+        );
+      }
     });
   });
 
