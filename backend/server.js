@@ -129,10 +129,60 @@ async function extractAssets(html, pageUrl, quality, req) {
     pushRemote(rawAssets, src, pageUrl, { alt: 'Picture source' });
   });
 
+    const externalSvgUses = [];
+
   $('svg').each((index, el) => {
+    const node = $(el);
+    const useNode = node.find('use').first();
+    const useHref = useNode.attr('href') || useNode.attr('xlink:href');
+
+    // Resolve SVGs that reference a local <symbol>.
+    if (useHref && useHref.startsWith('#')) {
+      const symbolId = useHref.slice(1);
+
+      const symbol = $('symbol').filter((_i, symbolEl) => {
+        return $(symbolEl).attr('id') === symbolId;
+      }).first();
+
+      if (symbol.length) {
+        const standalone = buildSvgFromSymbol(node, symbol, $);
+        const optimized = optimizeSvg(standalone);
+
+        if (optimized) {
+          rawAssets.push({
+            idSeed: pageUrl + '#symbol-' + symbolId,
+            src: svgToDataUri(optimized),
+            originalSrc: pageUrl + '#symbol-' + symbolId,
+            sourceUrl: pageUrl + '#symbol-' + symbolId,
+            alt: symbolId || 'SVG icon',
+            width: extractSvgDimension(optimized, 'width'),
+            height: extractSvgDimension(optimized, 'height'),
+            format: 'svg',
+            fileSize: Buffer.byteLength(optimized),
+            inlineSvg: optimized
+          });
+
+          return;
+        }
+      }
+    }
+
+    // Save external sprite references so we can resolve them asynchronously.
+    if (useHref && !useHref.startsWith('#')) {
+      externalSvgUses.push({
+        href: useHref,
+        index,
+        outerSvg: $.html(el)
+      });
+
+      return;
+    }
+
+    // Existing behavior for normal self-contained inline SVGs.
     const raw = $.html(el);
     const optimized = optimizeSvg(raw);
     if (!optimized) return;
+
     rawAssets.push({
       idSeed: pageUrl + '#inline-svg-' + (index + 1),
       src: svgToDataUri(optimized),
@@ -147,6 +197,39 @@ async function extractAssets(html, pageUrl, quality, req) {
     });
   });
 
+  // Resolve external SVG sprite references such as:
+  // /icons/sprite.svg#arrow-right
+  const spriteCache = new Map();
+
+  for (const item of externalSvgUses.slice(0, 50)) {
+    try {
+      const resolved = await resolveExternalSvgUse(
+        item.href,
+        pageUrl,
+        spriteCache
+      );
+
+      if (!resolved) continue;
+
+      const optimized = optimizeSvg(resolved.svg);
+      if (!optimized) continue;
+
+      rawAssets.push({
+        idSeed: resolved.sourceUrl,
+        src: svgToDataUri(optimized),
+        originalSrc: resolved.sourceUrl,
+        sourceUrl: resolved.sourceUrl,
+        alt: resolved.symbolId || 'SVG icon',
+        width: extractSvgDimension(optimized, 'width'),
+        height: extractSvgDimension(optimized, 'height'),
+        format: 'svg',
+        fileSize: Buffer.byteLength(optimized),
+        inlineSvg: optimized
+      });
+    } catch (_error) {
+      // External SVG sprite extraction is best-effort.
+    }
+  }
   $('link[rel*="icon"], link[rel="apple-touch-icon"], meta[property="og:image"], meta[name="twitter:image"], meta[itemprop="image"], a[href], video[poster]').each((_i, el) => {
     const node = $(el);
     const src = node.attr('href') || node.attr('content') || node.attr('poster');
