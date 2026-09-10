@@ -481,6 +481,119 @@ function optimizeSvg(svg) {
     .trim();
 }
 
+function buildSvgFromSymbol(outerSvg, symbol, $) {
+  const outerViewBox = outerSvg.attr('viewBox');
+  const symbolViewBox = symbol.attr('viewBox');
+
+  const viewBox = outerViewBox || symbolViewBox || '';
+
+  const width =
+    outerSvg.attr('width') ||
+    symbol.attr('width') ||
+    '';
+
+  const height =
+    outerSvg.attr('height') ||
+    symbol.attr('height') ||
+    '';
+
+  const contents = symbol.html() || '';
+
+  let attrs = ' xmlns="http://www.w3.org/2000/svg"';
+
+  if (viewBox) {
+    attrs += ' viewBox="' + escapeXmlAttribute(viewBox) + '"';
+  }
+
+  if (width) {
+    attrs += ' width="' + escapeXmlAttribute(width) + '"';
+  }
+
+  if (height) {
+    attrs += ' height="' + escapeXmlAttribute(height) + '"';
+  }
+
+  return '<svg' + attrs + '>' + contents + '</svg>';
+}
+
+async function resolveExternalSvgUse(href, pageUrl, cache) {
+  const value = String(href || '').trim();
+  if (!value) return null;
+
+  const hashIndex = value.indexOf('#');
+  if (hashIndex === -1) return null;
+
+  const spritePart = value.slice(0, hashIndex);
+  const symbolId = value.slice(hashIndex + 1);
+
+  if (!spritePart || !symbolId) return null;
+
+  const spriteUrl = toAbsoluteUrl(spritePart, pageUrl);
+  if (!spriteUrl) return null;
+
+  let spriteText = cache.get(spriteUrl);
+
+  if (!spriteText) {
+    const response = await fetchWithTimeout(spriteUrl, {
+      headers: {
+        'user-agent': browserUserAgent(),
+        'accept': 'image/svg+xml,text/xml,application/xml,*/*;q=0.8',
+        'accept-language': 'en-US,en;q=0.9',
+        'referer': pageUrl
+      }
+    });
+
+    if (!response.ok) return null;
+
+    spriteText = await readLimitedText(response, 1024 * 1024);
+    cache.set(spriteUrl, spriteText);
+  }
+
+  const sprite$ = cheerio.load(spriteText, {
+    xmlMode: true,
+    decodeEntities: false
+  });
+
+  const symbol = sprite$('symbol').filter((_i, el) => {
+    return sprite$(el).attr('id') === symbolId;
+  }).first();
+
+  if (!symbol.length) return null;
+
+  const viewBox = symbol.attr('viewBox') || '';
+  const width = symbol.attr('width') || '';
+  const height = symbol.attr('height') || '';
+  const contents = symbol.html() || '';
+
+  let attrs = ' xmlns="http://www.w3.org/2000/svg"';
+
+  if (viewBox) {
+    attrs += ' viewBox="' + escapeXmlAttribute(viewBox) + '"';
+  }
+
+  if (width) {
+    attrs += ' width="' + escapeXmlAttribute(width) + '"';
+  }
+
+  if (height) {
+    attrs += ' height="' + escapeXmlAttribute(height) + '"';
+  }
+
+  return {
+    symbolId,
+    sourceUrl: spriteUrl + '#' + symbolId,
+    svg: '<svg' + attrs + '>' + contents + '</svg>'
+  };
+}
+
+function escapeXmlAttribute(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function svgToDataUri(svg) {
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
